@@ -7,5 +7,5 @@ import { defineConfig } from "vite";
 // Если вместо этого деплоишь как user/org site (репозиторий вида
 // <username>.github.io) — поставь base: "/".
 export default defineConfig({
-  base: "/gamedev-taster/",
+  base: "/GamedevTaster/",
 });
