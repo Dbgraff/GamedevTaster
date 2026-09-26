@@ -124,15 +124,6 @@ function renderNumbersTask() {
         <div class="toolbar-spacer"></div>
       </div>
 
-      <div class="task-banner">
-        <div>
-          <p class="eyebrow">Задача 1 из 2</p>
-          <h2>Почини прыжок цифрами</h2>
-          <p class="lead">Персонаж не прыгает как надо. Подбери параметры справа так, чтобы прыжок выглядел естественно.</p>
-        </div>
-        <button id="next-btn" class="secondary" disabled>Дальше →</button>
-      </div>
-
       <div class="editor-main">
         <div class="hierarchy">
           <p class="section-title" style="margin-bottom:12px">Hierarchy</p>
@@ -140,6 +131,13 @@ function renderNumbersTask() {
           <div class="hierarchy-item"><span class="hierarchy-dot"></span>Directional Light</div>
           <div class="hierarchy-item"><span class="hierarchy-dot"></span>Ground</div>
           <div class="hierarchy-item selected"><span class="hierarchy-dot"></span>Player</div>
+
+          <div class="task-info">
+            <p class="eyebrow">Задача 1 из 2</p>
+            <h2>Почини прыжок цифрами</h2>
+            <p class="lead">Персонаж не прыгает как надо. Подбери параметры справа так, чтобы прыжок выглядел естественно.</p>
+          </div>
+          <button id="next-btn" class="secondary full next-btn" disabled>Дальше →</button>
         </div>
 
         <div class="scene-col">
@@ -248,6 +246,22 @@ const BLOCK_DEFS: Record<BlockId, { label: string; code: string }> = {
     label: "Подождать 0.3 сек",
     code: "yield return new WaitForSeconds(0.3f);",
   },
+  "repeat-3x": {
+    label: "Повторить следующий блок 3 раза",
+    code: "for (int i = 0; i < 3; i++) { … }",
+  },
+  "check-grounded": {
+    label: "Проверить, стоит ли персонаж на земле",
+    code: "if (isGrounded) { … }",
+  },
+  "declare-jump-var": {
+    label: "Создать переменную force = 20",
+    code: "float force = 20f;",
+  },
+  "log-jump": {
+    label: "Написать в консоль «Прыжок!»",
+    code: 'Debug.Log("Прыжок!");',
+  },
 };
 
 function renderCodeTask() {
@@ -293,15 +307,27 @@ function renderCodeTask() {
           <div class="hierarchy-item"><span class="hierarchy-dot"></span>Main Camera</div>
           <div class="hierarchy-item"><span class="hierarchy-dot"></span>Ground</div>
           <div class="hierarchy-item selected"><span class="hierarchy-dot"></span>Player</div>
+
+          <div class="task-info">
+            <p class="eyebrow">Задача 2 из 2</p>
+            <h2>Собери прыжок из блоков кода</h2>
+            <p class="lead">Перетащи блоки в область сборки в нужном порядке, затем жми Play. Проверим последовательность дважды: с ровного места и сразу после падения.</p>
+          </div>
+          <button id="next-btn" class="secondary full next-btn" disabled>Дальше →</button>
         </div>
 
         <div class="scene-col">
           <div class="scene-tabs">
-            <button type="button" class="tab-btn">Scene</button>
-            <button type="button" class="tab-btn active">Game</button>
+            <button type="button" class="tab-btn active" data-tab="game">Game</button>
+            <button type="button" class="tab-btn" data-tab="console">Console</button>
           </div>
-          <div class="viewport">
+          <div class="viewport" id="game-view">
             <canvas id="canvas"></canvas>
+          </div>
+          <div class="deco-scene" id="console-view" style="display:none; background-image:none;">
+            <div class="console" id="console-output">
+              <span class="muted">&gt; Собери блоки и нажми Play, чтобы увидеть разбор здесь.</span>
+            </div>
           </div>
           <div class="viewport-status" id="viewport-status">Собери блоки и нажми Play.</div>
         </div>
@@ -326,11 +352,12 @@ function renderCodeTask() {
           </div>
           <div class="section-card">
             <p class="section-title">Сборка (порядок важен)</p>
+            <div class="frame-label">void Update() — каждый кадр</div>
+            <div class="frame-label frame-label--nested">если пробел нажат и персонаж на земле</div>
             <div id="sequence" class="sequence"></div>
             <button id="clear-btn" class="text-btn">Очистить сборку</button>
           </div>
           <button id="run-btn" class="primary full">▶ Play</button>
-          <div id="result" class="result"></div>
         </div>
       </div>
 
@@ -343,11 +370,21 @@ function renderCodeTask() {
   const resizeObserver = new ResizeObserver(() => simulator.resize());
   resizeObserver.observe(canvas);
   const sequenceEl = document.querySelector<HTMLDivElement>("#sequence")!;
-  const resultEl = document.querySelector<HTMLDivElement>("#result")!;
+  const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
+  const gameView = document.querySelector<HTMLDivElement>("#game-view")!;
+  const consoleView = document.querySelector<HTMLDivElement>("#console-view")!;
+  const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
   const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
+
+  const setActiveTab = (tab: "game" | "console") => {
+    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
+    gameView.style.display = tab === "game" ? "" : "none";
+    consoleView.style.display = tab === "console" ? "flex" : "none";
+  };
+  tabButtons.forEach((btn) => btn.addEventListener("click", () => setActiveTab(btn.dataset.tab as "game" | "console")));
 
   function renderSequence() {
     if (sequence.length === 0) {
@@ -420,24 +457,33 @@ function renderCodeTask() {
 
   const runSequence = async () => {
     if (sequence.length === 0) {
-      resultEl.innerHTML = `<p class="status warn">Сначала собери хотя бы один блок.</p>`;
+      viewportStatus.textContent = "Сначала собери хотя бы один блок.";
+      viewportStatus.className = "viewport-status warn";
       return;
     }
     runBtn.disabled = true;
     toolbarPlay.disabled = true;
     viewportStatus.textContent = "Запускаю проверку…";
     viewportStatus.className = "viewport-status";
-    resultEl.innerHTML = "";
+    setActiveTab("game");
+    consoleOutput.innerHTML = `<span class="muted">&gt; Запускаю проверку…</span>`;
 
-    const trial1 = await simulator.runTrial(sequence, 0);
+    const logs1: string[] = [];
+    const logs2: string[] = [];
+
+    const trial1 = await simulator.runTrial(sequence, 0, 8, 15, (line) => logs1.push(line));
     await new Promise((r) => setTimeout(r, 250));
-    const trial2 = await simulator.runTrial(sequence, 180); // как будто персонаж только что падал
+    const trial2 = await simulator.runTrial(sequence, 180, 8, 15, (line) => logs2.push(line)); // как будто персонаж только что падал
+    // Эталон для сравнения — минимальная правильная сборка, без отвлекающих блоков.
+    const reference = await simulator.runTrial(["reset-velocity", "apply-force"], 0);
 
     runBtn.disabled = false;
     toolbarPlay.disabled = false;
 
     const maxH = Math.max(trial1.peakHeight, trial2.peakHeight, 1);
     const bar = (h: number) => Math.min(100, Math.round((h / maxH) * 100));
+    const refPeak = Math.max(reference.peakHeight, 1);
+    const tooHigh = trial1.peakHeight > refPeak * 1.6 || trial2.peakHeight > refPeak * 1.6;
 
     let verdict: string;
     let ok: boolean;
@@ -446,6 +492,9 @@ function renderCodeTask() {
       ok = false;
     } else if (trial1.didJump && !trial2.didJump) {
       verdict = "Первый прыжок сработал, а второй — нет! Если персонаж уже падал, сила добавляется к остаточной скорости — без сброса результат непредсказуем.";
+      ok = false;
+    } else if (tooHigh) {
+      verdict = "Прыжок подозрительно высокий по сравнению с эталоном — похоже, «Приложить силу вверх» выполняется несколько раз за одно нажатие (например, из-за «Повторить»). Update() и так уже крутится каждый кадр сам — оборачивать разовое действие в ещё один цикл не нужно.";
       ok = false;
     } else {
       const diff = Math.abs(trial1.peakHeight - trial2.peakHeight);
@@ -461,22 +510,30 @@ function renderCodeTask() {
 
     if (!ok) state.codeAttempts += 1;
 
-    viewportStatus.textContent = ok ? "Готово — последовательность стабильна." : "Есть баг — смотри разбор справа.";
+    viewportStatus.textContent = ok ? "Готово — последовательность стабильна." : "Есть баг — смотри разбор в Console.";
     viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
 
-    resultEl.innerHTML = `
-      <p class="status ${ok ? "ok" : "warn"}">${verdict}</p>
-      <div class="trial-bars">
+    const logLines = (label: string, lines: string[]) =>
+      lines.length ? `<div style="margin-top:8px"><span class="muted">// ${label}</span></div>` + lines.map((l) => `<div><span class="info">[i]</span> ${l}</div>`).join("") : "";
+
+    consoleOutput.innerHTML = `
+      <div><span class="muted">&gt;</span> Прыжок 1 (с пола): пик ${trial1.peakHeight}px${trial1.didJump ? "" : " — прыжка не было"}</div>
+      ${logLines("что реально выполнилось", logs1)}
+      <div style="margin-top:10px"><span class="muted">&gt;</span> Прыжок 2 (после падения): пик ${trial2.peakHeight}px${trial2.didJump ? "" : " — прыжка не было"}</div>
+      ${logLines("что реально выполнилось", logs2)}
+      <div class="trial-bars" style="margin: 14px 0;">
         <div class="trial-bar">
           <div class="bar-track"><div class="bar-fill" style="height:${bar(trial1.peakHeight)}%"></div></div>
-          <span>Прыжок 1 (с пола)</span>
+          <span>Прыжок 1</span>
         </div>
         <div class="trial-bar">
           <div class="bar-track"><div class="bar-fill" style="height:${bar(trial2.peakHeight)}%"></div></div>
-          <span>Прыжок 2 (после падения)</span>
+          <span>Прыжок 2</span>
         </div>
       </div>
+      <span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span>
     `;
+    setActiveTab("console");
   };
 
   // Оба Play — и в тулбаре, и в инспекторе — запускают одну и ту же проверку.

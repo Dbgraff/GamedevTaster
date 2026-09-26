@@ -234,12 +234,21 @@ export class PlatformerDemo {
 // порядок блоков наглядно проявил себя как баг.
 // ---------------------------------------------------------------------------
 
-export type BlockId = "reset-velocity" | "apply-force" | "wait";
+export type BlockId =
+  | "reset-velocity"
+  | "apply-force"
+  | "wait"
+  | "repeat-3x"
+  | "check-grounded"
+  | "declare-jump-var"
+  | "log-jump";
 
 export interface TrialResult {
   peakHeight: number;
   didJump: boolean;
 }
+
+export type LogFn = (line: string) => void;
 
 export class BlockJumpSimulator {
   private canvas: HTMLCanvasElement;
@@ -274,22 +283,60 @@ export class BlockJumpSimulator {
     this.draw(this.groundY);
   }
 
+  // Применяет эффект одного блока к текущей вертикальной скорости.
+  // Блоки без физического эффекта (условие/переменная/лог) просто печатают
+  // строку в лог через onLog — это и есть их "польза": показать, что код
+  // выполняется, но ни на что не влияет.
+  private applyBlockEffect(block: BlockId, velY: number, jumpForce: number, onLog?: LogFn): number {
+    switch (block) {
+      case "reset-velocity":
+        return 0;
+      case "apply-force":
+        return velY + -jumpForce * VELOCITY_SCALE;
+      case "check-grounded":
+        onLog?.("if (isGrounded) → true, но это уже проверено снаружи");
+        return velY;
+      case "declare-jump-var":
+        onLog?.("float force = 20f; — объявлена, но нигде не использована");
+        return velY;
+      case "log-jump":
+        onLog?.('Debug.Log("Прыжок!")');
+        return velY;
+      default:
+        return velY;
+    }
+  }
+
   async runTrial(
     sequence: BlockId[],
     startingVelY: number,
     jumpForce = 8,
-    gravityScale = 15
+    gravityScale = 15,
+    onLog?: LogFn
   ): Promise<TrialResult> {
     let velY = startingVelY;
 
-    for (const block of sequence) {
-      if (block === "reset-velocity") {
-        velY = 0;
-      } else if (block === "apply-force") {
-        velY += -jumpForce * VELOCITY_SCALE;
-      } else if (block === "wait") {
+    for (let i = 0; i < sequence.length; i++) {
+      const block = sequence[i];
+
+      if (block === "wait") {
         await this.sleep(180);
+        continue;
       }
+
+      if (block === "repeat-3x") {
+        const next = sequence[i + 1];
+        if (next && next !== "wait" && next !== "repeat-3x") {
+          onLog?.(`for (int i = 0; i < 3; i++) { … } — повторяем «${next}» 3 раза`);
+          for (let r = 0; r < 3; r++) {
+            velY = this.applyBlockEffect(next, velY, jumpForce, onLog);
+          }
+          i++; // блок-цель уже отработан внутри повторения, пропускаем его
+        }
+        continue;
+      }
+
+      velY = this.applyBlockEffect(block, velY, jumpForce, onLog);
     }
 
     return this.simulatePhysics(velY, gravityScale);

@@ -140,8 +140,7 @@ button, .button-link {
 .status.ok { color: var(--ok); }
 .status.warn { color: var(--warn); }
 
-.viewport-status.ok { color: var(--ok); }
-.viewport-status.warn { color: var(--warn); }
+
 
 .feedback-text { color: var(--text); font-size: 15px; }
 
@@ -214,16 +213,22 @@ body:has(.editor-shell) {
 .editor-main { flex: 1; display: flex; min-height: 0; }
 
 .hierarchy {
-  width: 200px; flex: none;
+  width: 240px; flex: none;
   background: #252526;
   border-right: 1px solid #101011;
-  padding: 14px 10px;
+  padding: 14px 12px;
   display: flex; flex-direction: column; gap: 2px;
 }
 .hierarchy-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 4px; font-size: 13px; color: #cfcfcf; }
 .hierarchy-item.selected { background: #2c5d87; color: #fff; }
 .hierarchy-dot { width: 6px; height: 6px; border-radius: 50%; background: #6b6b6b; flex: none; }
 .hierarchy-item.selected .hierarchy-dot { background: #fff; }
+
+.task-info { margin-top: 16px; padding-top: 16px; border-top: 1px solid #333; }
+.task-info .eyebrow { font-size: 11px; }
+.task-info h2 { font-size: 16px; margin: 0 0 8px; }
+.task-info .lead { font-size: 13px; line-height: 1.5; margin: 0; }
+.hierarchy .next-btn { margin-top: auto; }
 
 .scene-col { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .scene-tabs {
@@ -239,7 +244,20 @@ body:has(.editor-shell) {
 .viewport { flex: 1; position: relative; min-height: 280px; background: #101014; }
 .viewport canvas { position: absolute; inset: 0; width: 100%; height: 100%; border: none; border-radius: 0; margin: 0; display: block; }
 
-.viewport-status { height: 26px; flex: none; display: flex; align-items: center; padding: 0 12px; background: #232324; border-top: 1px solid #101011; font-size: 11px; color: #8a8a8a; }
+.viewport-status {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #232324;
+  border-top: 1px solid #101011;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #b8b8b8;
+}
+.viewport-status.ok { color: var(--ok); background: rgba(74, 222, 128, 0.08); }
+.viewport-status.warn { color: var(--warn); background: rgba(251, 191, 36, 0.08); }
 
 .inspector {
   width: 300px; flex: none;
@@ -350,12 +368,21 @@ body:has(.editor-shell) {
 }
 .block:active { cursor: grabbing; }
 
+.frame-label {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+  color: #7a7a8a;
+  padding: 4px 0 4px 0;
+}
+.frame-label--nested { padding-left: 16px; border-left: 2px solid #333; margin-left: 4px; color: #8a8a9a; }
+
 .sequence {
   min-height: 100px;
   background: #0d1020;
   border: 1px dashed var(--border);
   border-radius: 10px;
   padding: 10px;
+  margin-left: 20px;
   display: flex;
   flex-direction: column;
   gap: 6px;
