@@ -38,39 +38,83 @@ function renderIntro() {
 // ---------- Экран 1: задача с числами (рабочая среда: задача + вьюпорт) ----------
 function renderNumbersTask() {
   render(`
-    <div class="workbench">
-      <div class="panel-task screen">
-        <p class="eyebrow">Задача 1 из 2</p>
-        <h2>Почини прыжок цифрами</h2>
-        <p class="lead">
-          Персонаж не прыгает как надо. Подбери параметры справа так, чтобы
-          прыжок выглядел естественно.
-        </p>
+    <div class="editor-shell">
+      <div class="toolbar">
+        <div class="menu-group">
+          <span class="menu-label">File</span>
+          <span class="menu-label">Edit</span>
+          <span class="menu-label">Assets</span>
+          <span class="menu-label">GameObject</span>
+          <span class="menu-label">Component</span>
+        </div>
+        <div class="transport-group">
+          <button type="button" class="transport-btn" aria-label="Шаг назад" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 19V5l-9 7 9 7z"/><path d="M20 19V5l-9 7 9 7z"/></svg>
+          </button>
+          <button type="button" id="toolbar-play" class="transport-btn play" aria-label="Запустить">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button type="button" class="transport-btn" aria-label="Пауза" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+          </button>
+        </div>
+        <div class="toolbar-spacer"></div>
+      </div>
+
+      <div class="task-banner">
+        <div>
+          <p class="eyebrow">Задача 1 из 2</p>
+          <h2>Почини прыжок цифрами</h2>
+          <p class="lead">Персонаж не прыгает как надо. Подбери параметры справа так, чтобы прыжок выглядел естественно.</p>
+        </div>
+        <button id="next-btn" class="secondary" disabled>Дальше →</button>
+      </div>
+
+      <div class="editor-main">
+        <div class="hierarchy">
+          <p class="section-title" style="margin-bottom:12px">Hierarchy</p>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Main Camera</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Directional Light</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Ground</div>
+          <div class="hierarchy-item selected"><span class="hierarchy-dot"></span>Player</div>
+        </div>
+
+        <div class="scene-col">
+          <div class="scene-tabs">
+            <button type="button" class="tab-btn active">Scene</button>
+            <button type="button" class="tab-btn">Game</button>
+          </div>
+          <div class="viewport">
+            <canvas id="canvas" width="480" height="300"></canvas>
+          </div>
+          <div class="viewport-status" id="status">Готово к запуску.</div>
+        </div>
+
         <div class="inspector">
-          <div class="inspector-row">
-            <label for="jf">Jump Force</label>
-            <input id="jf" type="number" min="0" max="15" step="1" value="0" />
+          <div class="inspector-header">
+            <p>Player</p>
+            <p>Tag: Player · Layer: Default</p>
           </div>
-          <div class="inspector-row">
-            <label for="gs">Gravity Scale</label>
-            <input id="gs" type="number" min="1" max="30" step="1" value="15" />
+          <div class="section-card">
+            <p class="section-title">PlayerController (Script)</p>
+            <div class="field-row">
+              <label for="jf">Jump Force</label>
+              <input id="jf" type="number" min="0" max="15" step="1" value="0" />
+            </div>
+            <div class="field-row">
+              <label for="gs">Gravity Scale</label>
+              <input id="gs" type="number" min="1" max="30" step="1" value="15" />
+            </div>
+            <div class="field-row">
+              <label for="gc">Ground Check Distance</label>
+              <input id="gc" type="number" min="0.02" max="0.30" step="0.01" value="0.10" />
+            </div>
           </div>
-          <div class="inspector-row">
-            <label for="gc">Ground Check Distance</label>
-            <input id="gc" type="number" min="0.02" max="0.30" step="0.01" value="0.10" />
-          </div>
+          <button id="play-btn" class="primary full">▶ Play</button>
         </div>
-        <button id="play-btn" class="primary full">▶ Play</button>
-        <p id="status" class="status"></p>
-        <button id="next-btn" class="secondary full" disabled>Дальше →</button>
       </div>
-      <div class="panel-viewport">
-        <div class="viewport-chrome">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="viewport-tab active">Scene</span>
-        </div>
-        <canvas id="canvas" width="480" height="300"></canvas>
-      </div>
+
+      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
 
@@ -84,7 +128,7 @@ function renderNumbersTask() {
   const jf = document.querySelector<HTMLInputElement>("#jf")!;
   const gs = document.querySelector<HTMLInputElement>("#gs")!;
   const gc = document.querySelector<HTMLInputElement>("#gc")!;
-  const status = document.querySelector<HTMLParagraphElement>("#status")!;
+  const status = document.querySelector<HTMLDivElement>("#status")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
 
   const syncParams = () => {
@@ -108,14 +152,18 @@ function renderNumbersTask() {
   demo.onOutcome = (outcome, meta) => {
     state.numbersAttempts += 1;
     status.textContent = messages[outcome](meta.dip);
-    status.className = "status " + (outcome === "good-jump" ? "ok" : "warn");
+    status.className = "viewport-status " + (outcome === "good-jump" ? "ok" : outcome === "no-jump" || outcome === "clipped-floor" ? "warn" : "");
     if (outcome === "good-jump") nextBtn.disabled = false;
   };
 
-  document.querySelector("#play-btn")?.addEventListener("click", () => {
+  const runJump = () => {
     demo.reset();
     demo.tryJump();
-  });
+  };
+
+  // Оба Play — и в тулбаре, и в инспекторе — запускают одно и то же действие.
+  document.querySelector("#play-btn")?.addEventListener("click", runJump);
+  document.querySelector("#toolbar-play")?.addEventListener("click", runJump);
 
   nextBtn.addEventListener("click", renderCodeTask);
 }
@@ -141,40 +189,86 @@ function renderCodeTask() {
   let dragPayload: { source: "palette" | "sequence"; block: BlockId; index?: number } | null = null;
 
   render(`
-    <div class="workbench">
-      <div class="panel-task screen">
-        <p class="eyebrow">Задача 2 из 2</p>
-        <h2>Собери прыжок из блоков кода</h2>
-        <p class="lead">
-          Перетащи блоки в область сборки <b>в нужном порядке</b>, затем нажми «Запустить».
-          Мы проверим твою последовательность дважды: один раз с ровного места,
-          и один раз сразу после того, как персонаж уже падал — как в реальной игре.
-        </p>
-        <p class="section-label">Блоки:</p>
-        <div id="palette" class="palette">
-          ${(Object.keys(BLOCK_DEFS) as BlockId[])
-            .map(
-              (id) => `
-            <div class="block" draggable="true" data-block="${id}">
-              ${BLOCK_DEFS[id].label}
-            </div>`
-            )
-            .join("")}
+    <div class="editor-shell">
+      <div class="toolbar">
+        <div class="menu-group">
+          <span class="menu-label">File</span>
+          <span class="menu-label">Edit</span>
+          <span class="menu-label">Assets</span>
+          <span class="menu-label">GameObject</span>
+          <span class="menu-label">Component</span>
         </div>
-        <p class="section-label">Сборка (порядок важен):</p>
-        <div id="sequence" class="sequence"></div>
-        <button id="run-btn" class="primary full">▶ Запустить</button>
-        <button id="clear-btn" class="text-btn">Очистить сборку</button>
-        <div id="result" class="result"></div>
-        <button id="next-btn" class="secondary full" disabled>Дальше →</button>
-      </div>
-      <div class="panel-viewport">
-        <div class="viewport-chrome">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="viewport-tab active">Game</span>
+        <div class="transport-group">
+          <button type="button" class="transport-btn" aria-label="Шаг назад" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 19V5l-9 7 9 7z"/><path d="M20 19V5l-9 7 9 7z"/></svg>
+          </button>
+          <button type="button" id="toolbar-play" class="transport-btn play" aria-label="Запустить">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button type="button" class="transport-btn" aria-label="Пауза" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+          </button>
         </div>
-        <canvas id="canvas" width="480" height="300"></canvas>
+        <div class="toolbar-spacer"></div>
       </div>
+
+      <div class="task-banner">
+        <div>
+          <p class="eyebrow">Задача 2 из 2</p>
+          <h2>Собери прыжок из блоков кода</h2>
+          <p class="lead">Перетащи блоки в область сборки в нужном порядке, затем жми Play. Проверим последовательность дважды: с ровного места и сразу после падения.</p>
+        </div>
+        <button id="next-btn" class="secondary" disabled>Дальше →</button>
+      </div>
+
+      <div class="editor-main">
+        <div class="hierarchy">
+          <p class="section-title" style="margin-bottom:12px">Hierarchy</p>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Main Camera</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Ground</div>
+          <div class="hierarchy-item selected"><span class="hierarchy-dot"></span>Player</div>
+        </div>
+
+        <div class="scene-col">
+          <div class="scene-tabs">
+            <button type="button" class="tab-btn">Scene</button>
+            <button type="button" class="tab-btn active">Game</button>
+          </div>
+          <div class="viewport">
+            <canvas id="canvas" width="480" height="300"></canvas>
+          </div>
+          <div class="viewport-status" id="viewport-status">Собери блоки и нажми Play.</div>
+        </div>
+
+        <div class="inspector">
+          <div class="inspector-header">
+            <p>Player</p>
+            <p>Tag: Player · Layer: Default</p>
+          </div>
+          <div class="section-card">
+            <p class="section-title">Блоки</p>
+            <div id="palette" class="palette">
+              ${(Object.keys(BLOCK_DEFS) as BlockId[])
+                .map(
+                  (id) => `
+                <div class="block" draggable="true" data-block="${id}">
+                  ${BLOCK_DEFS[id].label}
+                </div>`
+                )
+                .join("")}
+            </div>
+          </div>
+          <div class="section-card">
+            <p class="section-title">Сборка (порядок важен)</p>
+            <div id="sequence" class="sequence"></div>
+            <button id="clear-btn" class="text-btn">Очистить сборку</button>
+          </div>
+          <button id="run-btn" class="primary full">▶ Play</button>
+          <div id="result" class="result"></div>
+        </div>
+      </div>
+
+      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
 
@@ -183,6 +277,8 @@ function renderCodeTask() {
   const sequenceEl = document.querySelector<HTMLDivElement>("#sequence")!;
   const resultEl = document.querySelector<HTMLDivElement>("#result")!;
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
+  const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
+  const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
 
   function renderSequence() {
@@ -254,19 +350,23 @@ function renderCodeTask() {
     renderSequence();
   });
 
-  runBtn.addEventListener("click", async () => {
+  const runSequence = async () => {
     if (sequence.length === 0) {
       resultEl.innerHTML = `<p class="status warn">Сначала собери хотя бы один блок.</p>`;
       return;
     }
     runBtn.disabled = true;
-    resultEl.innerHTML = `<p class="status">Запускаю проверку…</p>`;
+    toolbarPlay.disabled = true;
+    viewportStatus.textContent = "Запускаю проверку…";
+    viewportStatus.className = "viewport-status";
+    resultEl.innerHTML = "";
 
     const trial1 = await simulator.runTrial(sequence, 0);
     await new Promise((r) => setTimeout(r, 250));
     const trial2 = await simulator.runTrial(sequence, 180); // как будто персонаж только что падал
 
     runBtn.disabled = false;
+    toolbarPlay.disabled = false;
 
     const maxH = Math.max(trial1.peakHeight, trial2.peakHeight, 1);
     const bar = (h: number) => Math.min(100, Math.round((h / maxH) * 100));
@@ -287,12 +387,14 @@ function renderCodeTask() {
       } else {
         verdict = "Оба прыжка одинаковой высоты, независимо от того, падал ли персонаж до этого — правильная последовательность!";
         ok = true;
-        state.codeAttempts = Math.max(0, state.codeAttempts);
         nextBtn.disabled = false;
       }
     }
 
     if (!ok) state.codeAttempts += 1;
+
+    viewportStatus.textContent = ok ? "Готово — последовательность стабильна." : "Есть баг — смотри разбор справа.";
+    viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
 
     resultEl.innerHTML = `
       <p class="status ${ok ? "ok" : "warn"}">${verdict}</p>
@@ -307,7 +409,11 @@ function renderCodeTask() {
         </div>
       </div>
     `;
-  });
+  };
+
+  // Оба Play — и в тулбаре, и в инспекторе — запускают одну и ту же проверку.
+  runBtn.addEventListener("click", runSequence);
+  toolbarPlay.addEventListener("click", runSequence);
 
   renderSequence();
   nextBtn.addEventListener("click", renderReflection);

@@ -140,85 +140,116 @@ button, .button-link {
 .status.ok { color: var(--ok); }
 .status.warn { color: var(--warn); }
 
+.viewport-status.ok { color: var(--ok); }
+.viewport-status.warn { color: var(--warn); }
+
 .feedback-text { color: var(--text); font-size: 15px; }
 
-/* ---------- Workbench layout (задача слева, вьюпорт справа) ---------- */
+/* ---------- Editor shell (в стиле игрового движка) ---------- */
 
-.workbench {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
+#app:has(.editor-shell) { max-width: 1400px; }
+
+.editor-shell {
   width: 100%;
-  max-width: 900px;
-}
-
-.panel-task {
-  flex: 0 0 320px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #101011;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   animation: fade-in 0.25s ease;
 }
 
-.panel-viewport {
-  flex: 1;
-  position: sticky;
-  top: 24px;
-}
-
-.viewport-chrome {
+.toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: #1a1e30;
-  border: 1px solid var(--border);
-  border-bottom: none;
-  border-radius: 12px 12px 0 0;
-  padding: 10px 14px;
+  gap: 20px;
+  height: 52px;
+  padding: 0 18px;
+  background: #2b2b2c;
+  border-bottom: 1px solid #101011;
 }
-.viewport-chrome .dot {
-  width: 9px; height: 9px; border-radius: 50%;
-  background: #3a3f5c;
-}
-.viewport-tab {
-  margin-left: 10px;
-  font-size: 12px;
-  color: var(--muted);
-  padding: 3px 10px;
+.menu-group { display: flex; gap: 16px; flex: none; }
+.menu-label { font-size: 12px; color: #a9a9a9; }
+.transport-group { flex: 1; display: flex; justify-content: center; gap: 8px; }
+.transport-btn {
+  width: 40px; height: 40px;
   border-radius: 6px;
+  border: 1px solid #3a3a3c;
+  background: #2a2a2b;
+  color: #cfcfcf;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
 }
-.viewport-tab.active { background: #262b45; color: var(--accent); }
+.transport-btn:hover { border-color: var(--accent-strong); }
+.transport-btn.play { background: #3a7bd5; border-color: #3a7bd5; color: #0b1a2e; }
+.transport-btn.play:hover { filter: brightness(1.1); }
+.toolbar-spacer { width: 200px; flex: none; }
 
-.panel-viewport canvas {
-  margin: 0;
-  border-radius: 0 0 12px 12px;
-  border-top: none;
-}
-
-/* Unity-style inspector fields */
-.inspector { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
-.inspector-row {
+.task-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  background: #10131f;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: #232324;
+  border-bottom: 1px solid #101011;
 }
-.inspector-row label { font-size: 13px; color: var(--muted); }
-.inspector-row input[type="number"] {
-  width: 76px;
-  background: #0a0c14;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  padding: 5px 8px;
-  font-size: 13px;
-  text-align: right;
+.task-banner .eyebrow { margin: 0 0 4px; }
+.task-banner h2 { margin: 0 0 2px; font-size: 17px; }
+.task-banner .lead { margin: 0; font-size: 13px; max-width: 620px; }
+
+.editor-main { display: flex; min-height: 480px; }
+
+.hierarchy {
+  width: 200px; flex: none;
+  background: #252526;
+  border-right: 1px solid #101011;
+  padding: 14px 10px;
+  display: flex; flex-direction: column; gap: 2px;
 }
-.inspector-row input[type="number"]:focus {
-  outline: none;
-  border-color: var(--accent-strong);
+.hierarchy-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 4px; font-size: 13px; color: #cfcfcf; }
+.hierarchy-item.selected { background: #2c5d87; color: #fff; }
+.hierarchy-dot { width: 6px; height: 6px; border-radius: 50%; background: #6b6b6b; flex: none; }
+.hierarchy-item.selected .hierarchy-dot { background: #fff; }
+
+.scene-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.scene-tabs {
+  height: 36px; flex: none;
+  display: flex; align-items: flex-end; gap: 4px;
+  padding: 0 10px;
+  background: #232324;
+  border-bottom: 1px solid #101011;
 }
+.tab-btn { border: none; background: transparent; color: #9a9a9a; font-size: 12px; padding: 6px 14px; border-radius: 4px 4px 0 0; cursor: pointer; }
+.tab-btn.active { background: #1e1e1e; color: var(--accent); border: 1px solid #101011; border-bottom: 1px solid #1e1e1e; margin-bottom: -1px; }
+
+.viewport { flex: 1; position: relative; min-height: 280px; background: #101014; }
+.viewport canvas { position: absolute; inset: 0; width: 100%; height: 100%; border: none; border-radius: 0; margin: 0; display: block; }
+
+.viewport-status { height: 26px; flex: none; display: flex; align-items: center; padding: 0 12px; background: #232324; border-top: 1px solid #101011; font-size: 11px; color: #8a8a8a; }
+
+.inspector {
+  width: 300px; flex: none;
+  background: #252526;
+  border-left: 1px solid #101011;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+  overflow-y: auto;
+}
+.inspector-header p:first-child { margin: 0; font-size: 15px; font-weight: 600; color: #f0f0f0; }
+.inspector-header p:last-child { margin: 2px 0 0; font-size: 11px; color: #8a8a8a; }
+
+.section-card { background: #20201f; border: 1px solid #333; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #8a8a8a; margin: 0; }
+
+.field-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #1b1b1c; border: 1px solid #3a3a3c; border-radius: 6px; padding: 8px 10px; }
+.field-row label { font-size: 12px; color: #b8b8b8; }
+.field-row input[type="number"] { width: 70px; background: #141415; border: 1px solid #3a3a3c; border-radius: 4px; color: #e8e8e8; font-size: 12px; text-align: right; padding: 6px 8px; }
+.field-row input[type="number"]:focus { outline: none; border-color: var(--accent-strong); }
+
+.status-bar { height: 26px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #1b1b1c; border-top: 1px solid #101011; font-size: 11px; color: #7a7a7a; }
 
 .full { width: 100%; margin-bottom: 10px; }
 
@@ -321,8 +352,19 @@ button, .button-link {
   border-radius: 6px 6px 0 0;
 }
 
-@media (max-width: 720px) {
-  .workbench { flex-direction: column; }
-  .panel-viewport { position: static; width: 100%; }
-  .panel-task { flex: 1 1 auto; width: 100%; }
+/* Ноутбуки поуже: убираем декоративную Hierarchy и правый отступ тулбара,
+   отдаём место сцене и инспектору — это то, ради чего сюда пришли. */
+@media (max-width: 1100px) {
+  .hierarchy { display: none; }
+  .toolbar-spacer { display: none; }
+}
+
+/* Совсем узкие экраны (планшет/телефон, если кто-то откроет с него) —
+   складываем колонки в столбец. */
+@media (max-width: 760px) {
+  .editor-main { flex-direction: column; }
+  .inspector { width: 100%; border-left: none; border-top: 1px solid #101011; }
+  .viewport { min-height: 220px; }
+  .task-banner { flex-direction: column; align-items: flex-start; }
+  .menu-group { display: none; }
 }
