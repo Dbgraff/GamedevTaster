@@ -21,18 +21,81 @@ function render(html: string) {
 // ---------- Экран 0: интро ----------
 function renderIntro() {
   render(`
-    <div class="screen intro">
-      <p class="eyebrow">Попробуй профессию · 20 минут</p>
-      <h1>Почему персонаж не прыгает?</h1>
-      <p class="lead">
-        Сейчас ты на 20 минут станешь программистом в геймдеве. Никакой теории —
-        сразу разберёмся с живой проблемой, с которой сталкивается почти каждый
-        разработчик игр.
-      </p>
-      <button id="start-btn" class="primary">Начать</button>
+    <div class="editor-shell">
+      <div class="toolbar">
+        <div class="menu-group">
+          <span class="menu-label">File</span>
+          <span class="menu-label">Edit</span>
+          <span class="menu-label">Assets</span>
+          <span class="menu-label">GameObject</span>
+          <span class="menu-label">Component</span>
+        </div>
+        <div class="transport-group">
+          <button type="button" class="transport-btn" aria-label="Шаг назад" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 19V5l-9 7 9 7z"/><path d="M20 19V5l-9 7 9 7z"/></svg>
+          </button>
+          <button type="button" id="toolbar-play" class="transport-btn play" aria-label="Начать">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button type="button" class="transport-btn" aria-label="Пауза" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+          </button>
+        </div>
+        <div class="toolbar-spacer"></div>
+      </div>
+
+      <div class="editor-main">
+        <div class="hierarchy">
+          <p class="section-title" style="margin-bottom:12px">Hierarchy</p>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Main Camera</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Directional Light</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Ground</div>
+          <div class="hierarchy-item selected"><span class="hierarchy-dot"></span>Player</div>
+        </div>
+
+        <div class="scene-col">
+          <div class="scene-tabs">
+            <button type="button" class="tab-btn active">Scene</button>
+            <button type="button" class="tab-btn">Game</button>
+          </div>
+          <div class="deco-scene">
+            <div class="deco-ground"></div>
+            <div class="deco-player"></div>
+            <div class="hero-overlay">
+              <div class="hero-card">
+                <p class="eyebrow">Попробуй профессию · 20 минут</p>
+                <h1>Почему персонаж не прыгает?</h1>
+                <p class="lead">Сейчас ты на 20 минут станешь программистом в геймдеве. Никакой теории — сразу разберёмся с живой проблемой, с которой сталкивается почти каждый разработчик игр.</p>
+                <button id="hero-start-btn" class="primary">▶ Начать</button>
+              </div>
+            </div>
+          </div>
+          <div class="viewport-status">Готово к запуску.</div>
+        </div>
+
+        <div class="inspector">
+          <div class="inspector-header">
+            <p>Player</p>
+            <p>Tag: Player · Layer: Default</p>
+          </div>
+          <div class="section-card">
+            <p class="section-title">О пробе</p>
+            <div class="info-row"><span class="info-dot"></span>2 коротких задачи</div>
+            <div class="info-row"><span class="info-dot"></span>~20 минут целиком</div>
+            <div class="info-row"><span class="info-dot"></span>Персональный разбор в конце</div>
+          </div>
+          <button id="inspector-start-btn" class="primary full">▶ Начать</button>
+        </div>
+      </div>
+
+      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
-  document.querySelector("#start-btn")?.addEventListener("click", renderNumbersTask);
+
+  // Все три Play — тулбар, кнопка поверх сцены и в инспекторе — стартуют одно и то же.
+  document.querySelector("#toolbar-play")?.addEventListener("click", renderNumbersTask);
+  document.querySelector("#hero-start-btn")?.addEventListener("click", renderNumbersTask);
+  document.querySelector("#inspector-start-btn")?.addEventListener("click", renderNumbersTask);
 }
 
 // ---------- Экран 1: задача с числами (рабочая среда: задача + вьюпорт) ----------
@@ -85,7 +148,7 @@ function renderNumbersTask() {
             <button type="button" class="tab-btn">Game</button>
           </div>
           <div class="viewport">
-            <canvas id="canvas" width="480" height="300"></canvas>
+            <canvas id="canvas"></canvas>
           </div>
           <div class="viewport-status" id="status">Готово к запуску.</div>
         </div>
@@ -124,6 +187,9 @@ function renderNumbersTask() {
     gravityScale: 15,
     groundCheckDistance: 0.1,
   });
+
+  const resizeObserver = new ResizeObserver(() => demo.resize());
+  resizeObserver.observe(canvas);
 
   const jf = document.querySelector<HTMLInputElement>("#jf")!;
   const gs = document.querySelector<HTMLInputElement>("#gs")!;
@@ -235,7 +301,7 @@ function renderCodeTask() {
             <button type="button" class="tab-btn active">Game</button>
           </div>
           <div class="viewport">
-            <canvas id="canvas" width="480" height="300"></canvas>
+            <canvas id="canvas"></canvas>
           </div>
           <div class="viewport-status" id="viewport-status">Собери блоки и нажми Play.</div>
         </div>
@@ -274,6 +340,8 @@ function renderCodeTask() {
 
   const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
   const simulator = new BlockJumpSimulator(canvas);
+  const resizeObserver = new ResizeObserver(() => simulator.resize());
+  resizeObserver.observe(canvas);
   const sequenceEl = document.querySelector<HTMLDivElement>("#sequence")!;
   const resultEl = document.querySelector<HTMLDivElement>("#result")!;
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
@@ -422,28 +490,70 @@ function renderCodeTask() {
 // ---------- Экран 3: рефлексия ----------
 function renderReflection() {
   render(`
-    <div class="screen">
-      <p class="eyebrow">Последний шаг · Пара вопросов о тебе</p>
-      <h2>Что было интереснее?</h2>
-      <form id="reflection-form" class="reflection">
-        <fieldset>
-          <legend>Что понравилось больше?</legend>
-          <label><input type="radio" name="moreInteresting" value="numbers" checked /> Подбирать цифры на ощущение</label>
-          <label><input type="radio" name="moreInteresting" value="code" /> Собирать логику из блоков</label>
-        </fieldset>
-        <fieldset>
-          <legend>Где было сложнее?</legend>
-          <label><input type="radio" name="hardestPart" value="numbers" /> На моменте с цифрами</label>
-          <label><input type="radio" name="hardestPart" value="code" /> На моменте с блоками</label>
-          <label><input type="radio" name="hardestPart" value="neither" checked /> Было несложно</label>
-        </fieldset>
-        <fieldset>
-          <legend>Хотелось понять «почему это работает именно так», или просто получить результат?</legend>
-          <label><input type="radio" name="wantedWhy" value="yes" /> Хотелось разобраться, почему</label>
-          <label><input type="radio" name="wantedWhy" value="no" checked /> Главное — результат</label>
-        </fieldset>
-        <button type="submit" class="primary">Получить фидбэк</button>
-      </form>
+    <div class="editor-shell">
+      <div class="toolbar">
+        <div class="menu-group">
+          <span class="menu-label">File</span>
+          <span class="menu-label">Edit</span>
+          <span class="menu-label">Assets</span>
+          <span class="menu-label">GameObject</span>
+          <span class="menu-label">Component</span>
+        </div>
+        <div class="transport-group">
+          <button type="button" class="transport-btn" aria-label="Шаг назад" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 19V5l-9 7 9 7z"/><path d="M20 19V5l-9 7 9 7z"/></svg>
+          </button>
+          <button type="button" class="transport-btn" aria-label="Play" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button type="button" class="transport-btn" aria-label="Пауза" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+          </button>
+        </div>
+        <div class="toolbar-spacer"></div>
+      </div>
+
+      <div class="task-banner">
+        <div>
+          <p class="eyebrow">Последний шаг</p>
+          <h2>Что было интереснее?</h2>
+          <p class="lead">Пара вопросов о тебе — это поможет собрать честный разбор.</p>
+        </div>
+      </div>
+
+      <div class="editor-main">
+        <div class="hierarchy">
+          <p class="section-title" style="margin-bottom:12px">Hierarchy</p>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Main Camera</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Directional Light</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Ground</div>
+          <div class="hierarchy-item selected"><span class="hierarchy-dot"></span>Player</div>
+        </div>
+
+        <div class="reflection-panel">
+          <form id="reflection-form" class="reflection">
+            <fieldset>
+              <legend>Что понравилось больше?</legend>
+              <label><input type="radio" name="moreInteresting" value="numbers" checked /> Подбирать цифры на ощущение</label>
+              <label><input type="radio" name="moreInteresting" value="code" /> Собирать логику из блоков</label>
+            </fieldset>
+            <fieldset>
+              <legend>Где было сложнее?</legend>
+              <label><input type="radio" name="hardestPart" value="numbers" /> На моменте с цифрами</label>
+              <label><input type="radio" name="hardestPart" value="code" /> На моменте с блоками</label>
+              <label><input type="radio" name="hardestPart" value="neither" checked /> Было несложно</label>
+            </fieldset>
+            <fieldset>
+              <legend>Хотелось понять «почему это работает именно так», или просто получить результат?</legend>
+              <label><input type="radio" name="wantedWhy" value="yes" /> Хотелось разобраться, почему</label>
+              <label><input type="radio" name="wantedWhy" value="no" checked /> Главное — результат</label>
+            </fieldset>
+            <button type="submit" class="primary full">Получить фидбэк</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
 
@@ -464,22 +574,89 @@ function renderReflection() {
 function renderFeedback() {
   const feedback = getFeedback(state);
   render(`
-    <div class="screen">
-      <p class="eyebrow">Твой результат</p>
-      <h2>Вот что мы заметили</h2>
-      <p class="lead feedback-text">${feedback}</p>
-      <div class="actions column">
-        <a class="primary button-link" href="#">Хочу попробовать полноценный мини-курс →</a>
-        <a class="secondary button-link" href="#">Хочу попробовать другую профессию (геймдизайн/арт) →</a>
+    <div class="editor-shell">
+      <div class="toolbar">
+        <div class="menu-group">
+          <span class="menu-label">File</span>
+          <span class="menu-label">Edit</span>
+          <span class="menu-label">Assets</span>
+          <span class="menu-label">GameObject</span>
+          <span class="menu-label">Component</span>
+        </div>
+        <div class="transport-group">
+          <button type="button" class="transport-btn" aria-label="Шаг назад" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 19V5l-9 7 9 7z"/><path d="M20 19V5l-9 7 9 7z"/></svg>
+          </button>
+          <button type="button" id="toolbar-restart" class="transport-btn play" aria-label="Пройти заново">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15"/></svg>
+          </button>
+          <button type="button" class="transport-btn" aria-label="Пауза" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+          </button>
+        </div>
+        <div class="toolbar-spacer"></div>
       </div>
-      <button id="restart-btn" class="text-btn">Пройти пробу заново</button>
+
+      <div class="task-banner">
+        <div>
+          <p class="eyebrow">Результат</p>
+          <h2>Вот что мы заметили</h2>
+        </div>
+        <button id="banner-restart" class="secondary">Пройти пробу заново</button>
+      </div>
+
+      <div class="editor-main">
+        <div class="hierarchy">
+          <p class="section-title" style="margin-bottom:12px">Hierarchy</p>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Main Camera</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Directional Light</div>
+          <div class="hierarchy-item"><span class="hierarchy-dot"></span>Ground</div>
+          <div class="hierarchy-item selected"><span class="hierarchy-dot"></span>Player</div>
+        </div>
+
+        <div class="scene-col">
+          <div class="scene-tabs">
+            <button type="button" class="tab-btn">Scene</button>
+            <button type="button" class="tab-btn">Game</button>
+            <button type="button" class="tab-btn active">Console</button>
+          </div>
+          <div class="deco-scene" style="background-image:none;">
+            <div class="console">
+              <div><span class="muted">&gt;</span> Анализирую сессию…</div>
+              <div><span class="info">[i]</span> Задача 1: ${state.numbersAttempts} попыт${state.numbersAttempts === 1 ? "ка" : "ки"}, последняя — успешная</div>
+              <div><span class="info">[i]</span> Задача 2: ${state.codeAttempts === 0 ? "правильная последовательность блоков с первой попытки" : `${state.codeAttempts} неверн${state.codeAttempts === 1 ? "ая попытка" : "ые попытки"} перед успехом`}</div>
+              <div><span class="ok">[✓]</span> Профиль собран</div>
+              <div style="margin-top:14px"><span class="muted">&gt;</span> Печатаю рекомендацию…</div>
+              <span class="final">${feedback}</span>
+            </div>
+          </div>
+          <div class="viewport-status">Сессия завершена.</div>
+        </div>
+
+        <div class="inspector">
+          <div class="inspector-header">
+            <p>Player</p>
+            <p>Tag: Player · Layer: Default</p>
+          </div>
+          <div class="section-card">
+            <p class="section-title">Что дальше</p>
+            <a class="primary button-link" href="#">Полноценный мини-курс →</a>
+            <a class="secondary button-link" href="#">Другая профессия (арт/дизайн) →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-bar"><span>Session complete</span><span>Console: 1 message</span></div>
     </div>
   `);
-  document.querySelector("#restart-btn")?.addEventListener("click", () => {
+
+  const restart = () => {
     state.numbersAttempts = 0;
     state.codeAttempts = 0;
     renderIntro();
-  });
+  };
+  document.querySelector("#toolbar-restart")?.addEventListener("click", restart);
+  document.querySelector("#banner-restart")?.addEventListener("click", restart);
 }
 
 renderIntro();

@@ -147,16 +147,27 @@ button, .button-link {
 
 /* ---------- Editor shell (в стиле игрового движка) ---------- */
 
-#app:has(.editor-shell) { max-width: 1400px; }
+/* Когда на экране редактор — страница больше не центрированная карточка,
+   а полноэкранное приложение: без отступов, теней и скруглений. */
+body:has(.editor-shell) {
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+}
+#app:has(.editor-shell) {
+  max-width: none;
+  width: 100%;
+  height: 100vh;
+}
 
 .editor-shell {
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: #1e1e1e;
   color: #d4d4d4;
-  border: 1px solid #101011;
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   animation: fade-in 0.25s ease;
 }
 
@@ -200,7 +211,7 @@ button, .button-link {
 .task-banner h2 { margin: 0 0 2px; font-size: 17px; }
 .task-banner .lead { margin: 0; font-size: 13px; max-width: 620px; }
 
-.editor-main { display: flex; min-height: 480px; }
+.editor-main { flex: 1; display: flex; min-height: 0; }
 
 .hierarchy {
   width: 200px; flex: none;
@@ -214,7 +225,7 @@ button, .button-link {
 .hierarchy-dot { width: 6px; height: 6px; border-radius: 50%; background: #6b6b6b; flex: none; }
 .hierarchy-item.selected .hierarchy-dot { background: #fff; }
 
-.scene-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.scene-col { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .scene-tabs {
   height: 36px; flex: none;
   display: flex; align-items: flex-end; gap: 4px;
@@ -252,6 +263,65 @@ button, .button-link {
 .status-bar { height: 26px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #1b1b1c; border-top: 1px solid #101011; font-size: 11px; color: #7a7a7a; }
 
 .full { width: 100%; margin-bottom: 10px; }
+
+/* Декоративная сцена для интро/рефлексии — без canvas, просто CSS */
+.deco-scene {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  background-color: #101014;
+  background-image:
+    linear-gradient(rgba(125, 211, 252, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  overflow: hidden;
+}
+.deco-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: #2e3352; border-top: 1px solid #4b5285; }
+.deco-player { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); width: 44px; height: 44px; background: #7dd3fc; border-radius: 8px; }
+
+/* Hero-оверлей поверх сцены (главное меню) */
+.hero-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.hero-card {
+  max-width: 560px;
+  text-align: center;
+  background: rgba(16, 16, 20, 0.86);
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 40px 44px;
+}
+.hero-card .eyebrow { justify-content: center; }
+.hero-card h1 { font-size: 30px; color: #f2f2f2; }
+.hero-card .lead { max-width: none; }
+
+.info-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #c7c7c7; }
+.info-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex: none; }
+
+/* Консоль вывода (экран результата) */
+.console {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 20px 22px;
+  overflow-y: auto;
+  height: 100%;
+}
+.console .muted { color: #6b6b6b; }
+.console .ok { color: var(--ok); }
+.console .info { color: var(--accent); }
+.console .final { color: #e8e8e8; font-size: 13px; line-height: 1.6; display: block; margin-top: 12px; }
+
+/* Рефлексия внутри той же оболочки */
+.reflection-panel { flex: 1; padding: 24px; overflow-y: auto; display: flex; justify-content: center; }
+.reflection-panel form { width: 100%; max-width: 560px; }
+.reflection-panel fieldset {
+  border: 1px solid #333;
+  background: #20201f;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 0 0 14px;
+}
+.reflection-panel legend { padding: 0 6px; color: #8a8a8a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+.reflection-panel label { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; color: #d4d4d4; }
 
 .section-label {
   font-size: 12px;

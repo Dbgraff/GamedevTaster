@@ -19,6 +19,7 @@ const GRAVITY_SCALE_MULT = 60; // масштаб gravityScale -> пиксели/
 const CORRECTION_MS = 220; // сколько длится "доводка" персонажа обратно на пол
 
 export class PlatformerDemo {
+  private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private width: number;
   private height: number;
@@ -44,13 +45,38 @@ export class PlatformerDemo {
   constructor(canvas: HTMLCanvasElement, params: PhysicsParams) {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas 2D context not available");
+    this.canvas = canvas;
     this.ctx = ctx;
-    this.width = canvas.width;
-    this.height = canvas.height;
-    this.groundY = this.height - 56;
-    this.restY = this.groundY;
-    this.posY = this.groundY;
+    this.width = 0;
+    this.height = 0;
+    this.groundY = 0;
+    this.restY = 0;
+    this.posY = 0;
     this.params = params;
+    this.resize();
+  }
+
+  // Подгоняет внутреннее разрешение канваса под его реальный отображаемый
+  // размер (с учётом devicePixelRatio — иначе на Retina/масштабированных
+  // экранах картинка будет мыльной). Вызывать при монтировании и на resize.
+  resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = this.canvas.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+
+    this.width = width;
+    this.height = height;
+    this.canvas.width = Math.round(width * dpr);
+    this.canvas.height = Math.round(height * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const wasGrounded = this.isGrounded && !this.correcting;
+    this.groundY = height - 56;
+    if (wasGrounded) {
+      this.restY = this.groundY;
+      this.posY = this.groundY;
+    }
     this.draw();
   }
 
@@ -216,6 +242,7 @@ export interface TrialResult {
 }
 
 export class BlockJumpSimulator {
+  private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private width: number;
   private height: number;
@@ -224,10 +251,26 @@ export class BlockJumpSimulator {
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas 2D context not available");
+    this.canvas = canvas;
     this.ctx = ctx;
-    this.width = canvas.width;
-    this.height = canvas.height;
-    this.groundY = this.height - 56;
+    this.width = 0;
+    this.height = 0;
+    this.groundY = 0;
+    this.resize();
+  }
+
+  resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = this.canvas.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
+
+    this.width = width;
+    this.height = height;
+    this.canvas.width = Math.round(width * dpr);
+    this.canvas.height = Math.round(height * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.groundY = height - 56;
     this.draw(this.groundY);
   }
 
