@@ -1,5 +1,5 @@
 import "./style.css";
-import { PlatformerDemo, BlockJumpSimulator, type PlayOutcome, type BlockId } from "./game";
+import { PlatformerDemo, BlockJumpSimulator, referencePeakHeight, type PlayOutcome, type BlockId } from "./game";
 import { getFeedback, type SessionState } from "./feedback";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -208,6 +208,7 @@ function renderNumbersTask() {
   const messages: Record<PlayOutcome, (dip: number) => string> = {
     idle: () => "",
     "no-jump": () => "Ничего не произошло — Jump Force сейчас равен нулю, силе просто неоткуда взяться.",
+    "too-weak": () => "Персонаж технически подпрыгнул, но это еле заметное дрожание — так не считается. Прибавь высоты.",
     "clipped-floor": (dip) =>
       `Персонаж провалился на ${dip}px ниже пола перед тем, как система это заметила — Ground Check Distance слишком маленький.`,
     "good-jump": () => "Похоже на нормальный прыжок! Можно идти дальше, либо ещё поэкспериментировать.",
@@ -216,7 +217,7 @@ function renderNumbersTask() {
   demo.onOutcome = (outcome, meta) => {
     state.numbersAttempts += 1;
     status.textContent = messages[outcome](meta.dip);
-    status.className = "viewport-status " + (outcome === "good-jump" ? "ok" : outcome === "no-jump" || outcome === "clipped-floor" ? "warn" : "");
+    status.className = "viewport-status " + (outcome === "good-jump" ? "ok" : outcome === "idle" ? "" : "warn");
     if (outcome === "good-jump") nextBtn.disabled = false;
   };
 
@@ -465,15 +466,15 @@ function renderCodeTask() {
     const trial1 = await simulator.runTrial(sequence, 0, 8, 15, (line) => logs1.push(line));
     await new Promise((r) => setTimeout(r, 250));
     const trial2 = await simulator.runTrial(sequence, 180, 8, 15, (line) => logs2.push(line)); // как будто персонаж только что падал
-    // Эталон для сравнения — минимальная правильная сборка, без отвлекающих блоков.
-    const reference = await simulator.runTrial(["reset-velocity", "apply-force"], 0);
 
     runBtn.disabled = false;
     toolbarPlay.disabled = false;
 
     const maxH = Math.max(trial1.peakHeight, trial2.peakHeight, 1);
     const bar = (h: number) => Math.min(100, Math.round((h / maxH) * 100));
-    const refPeak = Math.max(reference.peakHeight, 1);
+    // Эталон считаем напрямую по формуле, без анимации — иначе на канвасе
+    // проигрывался бы третий, никак не объяснённый прыжок.
+    const refPeak = Math.max(referencePeakHeight(8, 15), 1);
     const tooHigh = trial1.peakHeight > refPeak * 1.6 || trial2.peakHeight > refPeak * 1.6;
 
     let verdict: string;

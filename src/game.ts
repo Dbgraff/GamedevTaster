@@ -11,7 +11,9 @@ export interface PhysicsParams {
   groundCheckDistance: number; // 0.02–0.30, аналог радиуса проверки земли (в юнитах)
 }
 
-export type PlayOutcome = "idle" | "no-jump" | "clipped-floor" | "good-jump";
+export type PlayOutcome = "idle" | "no-jump" | "too-weak" | "clipped-floor" | "good-jump";
+
+const MIN_JUMP_HEIGHT = 24; // px — прыжок ниже этого порога не считается "нормальным"
 
 const PX_PER_UNIT = 100; // масштаб перевода "юнитов" groundCheckDistance в пиксели
 const VELOCITY_SCALE = 50; // масштаб jumpForce -> пиксели/сек
@@ -180,8 +182,10 @@ export class PlatformerDemo {
         });
       } else {
         this.posY = this.groundY;
-        this.onOutcome?.("good-jump", {
-          peakHeight: Math.round(this.maxHeightReached),
+        const peakHeight = Math.round(this.maxHeightReached);
+        const outcome: PlayOutcome = peakHeight < MIN_JUMP_HEIGHT ? "too-weak" : "good-jump";
+        this.onOutcome?.(outcome, {
+          peakHeight,
           airTime: Math.round(this.elapsedAirTime * 1000),
           dip: 0,
         });
@@ -258,6 +262,15 @@ export interface TrialResult {
 }
 
 export type LogFn = (line: string) => void;
+
+// Эталонная высота "правильного" прыжка, посчитанная напрямую по формуле
+// (v²/2g), без канваса и анимации — используется только для сравнения
+// в разборе, никогда не проигрывается на экране как настоящий прыжок.
+export function referencePeakHeight(jumpForce = 8, gravityScale = 15): number {
+  const v = jumpForce * VELOCITY_SCALE;
+  const g = gravityScale * GRAVITY_SCALE_MULT;
+  return (v * v) / (2 * g);
+}
 
 export class BlockJumpSimulator {
   private canvas: HTMLCanvasElement;
