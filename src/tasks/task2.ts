@@ -281,10 +281,7 @@ export function renderCodeTask() {
       lines.length ? `<div style="margin-top:8px"><span class="muted">// ${label}</span></div>` + lines.map((l) => `<div><span class="info">[i]</span> ${l}</div>`).join("") : "";
 
     consoleOutput.innerHTML = `
-      <div><span class="muted">&gt;</span> Прыжок 1 (с пола): пик ${trial1.peakHeight}px${trial1.didJump ? "" : " — прыжка не было"}</div>
-      ${logLines("что реально выполнилось", logs1)}
-      <div style="margin-top:10px"><span class="muted">&gt;</span> Прыжок 2 (после падения): пик ${trial2.peakHeight}px${trial2.didJump ? "" : " — прыжка не было"}</div>
-      ${logLines("что реально выполнилось", logs2)}
+      <div><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
       <div class="trial-bars" style="margin: 14px 0;">
         <div class="trial-bar">
           <div class="bar-track"><div class="bar-fill" style="height:${bar(trial1.peakHeight)}%"></div></div>
@@ -295,7 +292,10 @@ export function renderCodeTask() {
           <span>Прыжок 2</span>
         </div>
       </div>
-      <span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span>
+      <div><span class="muted">&gt;</span> Прыжок 1 (с пола): пик ${trial1.peakHeight}px${trial1.didJump ? "" : " — прыжка не было"}</div>
+      ${logLines("что реально выполнилось", logs1)}
+      <div style="margin-top:10px"><span class="muted">&gt;</span> Прыжок 2 (после падения): пик ${trial2.peakHeight}px${trial2.didJump ? "" : " — прыжка не было"}</div>
+      ${logLines("что реально выполнилось", logs2)}
     `;
     openConsole();
   };

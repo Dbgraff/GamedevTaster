@@ -275,8 +275,9 @@ export function renderTask3() {
     }
 
     consoleOutput.innerHTML = `
+      <div><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
+      <div style="margin-top:10px"><span class="muted">// что реально выполнилось по шагам</span></div>
       ${result.log.map((line) => `<div><span class="info">[i]</span> ${line}</div>`).join("")}
-      <div style="margin-top:10px"><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
     `;
 
     const animationMs = moved ? 1800 : 400;
