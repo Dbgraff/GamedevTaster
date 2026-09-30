@@ -42,6 +42,7 @@ export function renderTask3() {
           <div class="deco-scene" id="scene-view">
             <div class="deco-ground"></div>
             <div class="deco-player" id="cube3"></div>
+            <div class="control-hint" id="control-hint" style="display:none">← → двигай, Пробел — прыжок</div>
           </div>
           <div class="deco-scene" id="console-view" style="display:none; background-image:none;">
             <div class="console" id="console-output">
@@ -49,6 +50,7 @@ export function renderTask3() {
             </div>
           </div>
           <div class="viewport-status" id="viewport-status">Собери шаги и нажми Play.</div>
+          <button id="play-cube-btn" class="text-btn" style="display:none; padding: 0 16px 10px;">🎮 Управлять кубиком самому</button>
         </div>
 
         <div class="inspector">
@@ -90,6 +92,8 @@ export function renderTask3() {
   const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
   const cube = document.querySelector<HTMLDivElement>("#cube3")!;
+  const playBtn = document.querySelector<HTMLButtonElement>("#play-cube-btn")!;
+  const controlHint = document.querySelector<HTMLDivElement>("#control-hint")!;
 
   const setActiveTab = (tab: "scene" | "console") => {
     tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
@@ -204,15 +208,96 @@ export function renderTask3() {
       ${result.log.map((line) => `<div><span class="info">[i]</span> ${line}</div>`).join("")}
       <div style="margin-top:10px"><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
     `;
-    setActiveTab("console");
 
-    if (ok) nextBtn.disabled = false;
+    // Сначала даём доиграть анимации на сцене, и только потом переключаем
+    // на разбор — иначе игрок даже не видит, что сделал кубик.
+    const animationMs = moved ? 1800 : 400;
+    window.setTimeout(() => {
+      setActiveTab("console");
+      if (ok) {
+        nextBtn.disabled = false;
+        playBtn.style.display = "";
+      }
+    }, animationMs);
   };
 
-  runBtn.addEventListener("click", runSequence);
-  toolbarPlay.addEventListener("click", runSequence);
+  // ---------- Песочница: поуправлять кубиком самому после решения задачи ----------
+  let controlsActive = false;
+  let posX = 50; // % от ширины сцены
+  const heldKeys = new Set<string>();
+  let lastControlTime = 0;
+  let controlLoopId: number | null = null;
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    const key = e.key.toLowerCase();
+    if (key === "arrowleft" || key === "arrowright" || key === "a" || key === "d") {
+      heldKeys.add(key);
+    }
+    if (e.code === "Space") {
+      e.preventDefault();
+      cube.classList.remove("jumping");
+      void cube.offsetWidth;
+      cube.classList.add("jumping");
+    }
+  };
+  const onKeyUp = (e: KeyboardEvent) => heldKeys.delete(e.key.toLowerCase());
+
+  const controlLoop = (time: number) => {
+    if (!controlsActive) return;
+    const dt = Math.min((time - lastControlTime) / 1000, 0.05);
+    lastControlTime = time;
+    const speed = 45; // %/сек
+    if (heldKeys.has("arrowleft") || heldKeys.has("a")) posX -= speed * dt;
+    if (heldKeys.has("arrowright") || heldKeys.has("d")) posX += speed * dt;
+    posX = Math.max(6, Math.min(94, posX));
+    cube.style.left = `${posX}%`;
+    controlLoopId = requestAnimationFrame(controlLoop);
+  };
+
+  const startControls = () => {
+    if (controlsActive) return;
+    controlsActive = true;
+    cube.classList.remove("moving", "stuck");
+    cube.style.left = "50%";
+    posX = 50;
+    controlHint.style.display = "block";
+    viewportStatus.textContent = "Песочница: пробуй сам, как двигается и прыгает кубик.";
+    viewportStatus.className = "viewport-status";
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    lastControlTime = performance.now();
+    controlLoopId = requestAnimationFrame(controlLoop);
+  };
+
+  const stopControls = () => {
+    if (!controlsActive) return;
+    controlsActive = false;
+    heldKeys.clear();
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("keyup", onKeyUp);
+    if (controlLoopId !== null) cancelAnimationFrame(controlLoopId);
+    cube.style.left = "";
+    controlHint.style.display = "none";
+  };
+
+  playBtn.addEventListener("click", () => {
+    setActiveTab("scene");
+    startControls();
+  });
+
+  runBtn.addEventListener("click", () => {
+    stopControls();
+    runSequence();
+  });
+  toolbarPlay.addEventListener("click", () => {
+    stopControls();
+    runSequence();
+  });
 
   renderSequence();
-  nextBtn.addEventListener("click", renderReflection);
+  nextBtn.addEventListener("click", () => {
+    stopControls();
+    renderReflection();
+  });
   setupHints();
 }
