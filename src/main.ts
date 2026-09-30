@@ -234,9 +234,21 @@ function renderNumbersTask() {
 
 // ---------- Экран 2: задача с блоками кода ----------
 const BLOCK_DEFS: Record<BlockId, { label: string; code: string }> = {
+  "check-grounded": {
+    label: "Проверить, стоит ли персонаж на земле",
+    code: "if (isGrounded) { … }",
+  },
   "reset-velocity": {
     label: "Сбросить скорость по Y",
     code: "rb.velocity = new Vector2(rb.velocity.x, 0);",
+  },
+  "declare-jump-var": {
+    label: "Создать переменную force = 20",
+    code: "float force = 20f;",
+  },
+  "log-jump": {
+    label: "Написать в консоль «Прыжок!»",
+    code: 'Debug.Log("Прыжок!");',
   },
   "apply-force": {
     label: "Приложить силу вверх",
@@ -249,18 +261,6 @@ const BLOCK_DEFS: Record<BlockId, { label: string; code: string }> = {
   "repeat-3x": {
     label: "Повторить следующий блок 3 раза",
     code: "for (int i = 0; i < 3; i++) { … }",
-  },
-  "check-grounded": {
-    label: "Проверить, стоит ли персонаж на земле",
-    code: "if (isGrounded) { … }",
-  },
-  "declare-jump-var": {
-    label: "Создать переменную force = 20",
-    code: "float force = 20f;",
-  },
-  "log-jump": {
-    label: "Написать в консоль «Прыжок!»",
-    code: 'Debug.Log("Прыжок!");',
   },
 };
 
@@ -290,15 +290,6 @@ function renderCodeTask() {
           </button>
         </div>
         <div class="toolbar-spacer"></div>
-      </div>
-
-      <div class="task-banner">
-        <div>
-          <p class="eyebrow">Задача 2 из 2</p>
-          <h2>Собери прыжок из блоков кода</h2>
-          <p class="lead">Перетащи блоки в область сборки в нужном порядке, затем жми Play. Проверим последовательность дважды: с ровного места и сразу после падения.</p>
-        </div>
-        <button id="next-btn" class="secondary" disabled>Дальше →</button>
       </div>
 
       <div class="editor-main">

@@ -372,21 +372,21 @@ body:has(.editor-shell) {
   font-family: "Cascadia Code", Consolas, monospace;
   font-size: 11px;
   color: #7a7a8a;
-  padding: 4px 0 4px 0;
+  padding: 2px 0;
 }
-.frame-label--nested { padding-left: 16px; border-left: 2px solid #333; margin-left: 4px; color: #8a8a9a; }
+.frame-label--nested { padding-left: 14px; border-left: 2px solid #333; margin-left: 4px; color: #8a8a9a; }
 
 .sequence {
-  min-height: 100px;
+  min-height: 56px;
   background: #0d1020;
   border: 1px dashed var(--border);
   border-radius: 10px;
-  padding: 10px;
-  margin-left: 20px;
+  padding: 8px;
+  margin-left: 18px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .sequence-empty {
   color: var(--muted);
