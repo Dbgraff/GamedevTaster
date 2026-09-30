@@ -477,10 +477,21 @@ function renderCodeTask() {
     const refPeak = Math.max(referencePeakHeight(8, 15), 1);
     const tooHigh = trial1.peakHeight > refPeak * 1.6 || trial2.peakHeight > refPeak * 1.6;
 
+    const forceIndex = sequence.indexOf("apply-force");
+    const resetIndex = sequence.indexOf("reset-velocity");
+    const forceGetsCancelled = forceIndex !== -1 && resetIndex !== -1 && resetIndex > forceIndex;
+    const missingForce = forceIndex === -1;
+
     let verdict: string;
     let ok: boolean;
     if (!trial1.didJump && !trial2.didJump) {
-      verdict = "Персонаж вообще не прыгает — в сборке не хватает блока «Приложить силу вверх», либо сброс скорости стоит после него и обнуляет её.";
+      if (forceGetsCancelled) {
+        verdict = "Оба нужных блока есть, но «Сбросить скорость по Y» стоит ПОСЛЕ «Приложить силу вверх» — и полностью гасит то, что ты только что применил. Поменяй их местами.";
+      } else if (missingForce) {
+        verdict = "Персонаж вообще не прыгает — в сборке нет блока «Приложить силу вверх», прыгать просто нечем.";
+      } else {
+        verdict = "Персонаж вообще не прыгает — проверь, что «Приложить силу вверх» вообще есть в сборке и ничего не гасит его после.";
+      }
       ok = false;
     } else if (trial1.didJump && !trial2.didJump) {
       verdict = "Первый прыжок сработал, а второй — нет! Если персонаж уже падал, сила добавляется к остаточной скорости — без сброса результат непредсказуем.";
