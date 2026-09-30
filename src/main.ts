@@ -160,15 +160,15 @@ function renderNumbersTask() {
             <p class="section-title">PlayerController (Script)</p>
             <div class="field-row">
               <label for="jf">Jump Force</label>
-              <input id="jf" type="number" min="0" max="15" step="1" value="0" />
+              <input id="jf" type="number" min="0" max="15" step="1" value="2" />
             </div>
             <div class="field-row">
               <label for="gs">Gravity Scale</label>
-              <input id="gs" type="number" min="1" max="30" step="1" value="15" />
+              <input id="gs" type="number" min="1" max="30" step="1" value="26" />
             </div>
             <div class="field-row">
               <label for="gc">Ground Check Distance</label>
-              <input id="gc" type="number" min="0.02" max="0.30" step="0.01" value="0.10" />
+              <input id="gc" type="number" min="0.02" max="0.30" step="0.01" value="0.03" />
             </div>
           </div>
           <button id="play-btn" class="primary full">▶ Play</button>
@@ -181,9 +181,9 @@ function renderNumbersTask() {
 
   const canvas = document.querySelector<HTMLCanvasElement>("#canvas")!;
   const demo = new PlatformerDemo(canvas, {
-    jumpForce: 0,
-    gravityScale: 15,
-    groundCheckDistance: 0.1,
+    jumpForce: 2,
+    gravityScale: 26,
+    groundCheckDistance: 0.03,
   });
 
   const resizeObserver = new ResizeObserver(() => demo.resize());

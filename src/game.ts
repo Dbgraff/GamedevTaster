@@ -14,9 +14,11 @@ export interface PhysicsParams {
 export type PlayOutcome = "idle" | "no-jump" | "clipped-floor" | "good-jump";
 
 const PX_PER_UNIT = 100; // масштаб перевода "юнитов" groundCheckDistance в пиксели
-const VELOCITY_SCALE = 12; // масштаб jumpForce -> пиксели/сек
-const GRAVITY_SCALE_MULT = 60; // масштаб gravityScale -> пиксели/сек^2
+const VELOCITY_SCALE = 50; // масштаб jumpForce -> пиксели/сек
+const GRAVITY_SCALE_MULT = 45; // масштаб gravityScale -> пиксели/сек^2
 const CORRECTION_MS = 220; // сколько длится "доводка" персонажа обратно на пол
+// При jumpForce=8 / gravityScale=15 (стандартные значения задачи 2) пик прыжка
+// получается ~120px — заметный прыжок на весь экран, а не еле уловимое движение.
 
 export class PlatformerDemo {
   private canvas: HTMLCanvasElement;
@@ -104,6 +106,9 @@ export class PlatformerDemo {
     }
 
     this.isGrounded = false;
+    // Никакого ограничения по высоте — если выкрутить силу в максимум, а гравитацию
+    // в минимум, персонаж честно улетает за пределы экрана. Это тоже часть задачи:
+    // увидеть, как ведут себя крайние значения.
     this.velY = -this.params.jumpForce * VELOCITY_SCALE;
     this.elapsedAirTime = 0;
     this.maxHeightReached = 0;
@@ -147,8 +152,12 @@ export class PlatformerDemo {
     }
 
     if (this.posY >= this.groundY && this.velY >= 0) {
-      // Сколько персонаж успел "провалиться" за этот кадр, прежде чем игра это заметила
-      const overshoot = this.posY - this.groundY;
+      // Сколько персонаж успел бы "провалиться" за кадр, прежде чем игра это заметила.
+      // Считаем через скорость приземления и ФИКСИРОВАННЫЙ номинальный шаг кадра
+      // (а не реальный this.posY-this.groundY), иначе результат зависит от дрожания
+      // таймингов браузера — один и тот же прыжок то проходил бы чисто, то проваливался.
+      const NOMINAL_DT = 1 / 60;
+      const overshoot = this.velY * NOMINAL_DT;
       // Радиус, в пределах которого игра ЛОВИТ приземление вовремя.
       // Чем меньше groundCheckDistance, тем этот радиус меньше — и тем легче
       // провалиться глубже, чем он покрывает.
@@ -357,6 +366,10 @@ export class BlockJumpSimulator {
         resolve({ peakHeight: 0, didJump: false });
         return;
       }
+
+      // Даже если блок «Повторить» утроил силу — не даём улететь за пределы вьюпорта навсегда.
+      const maxVel = Math.sqrt(2 * gravityScale * GRAVITY_SCALE_MULT * this.height * 0.85);
+      velY = Math.max(velY, -maxVel);
 
       const step = (time: number) => {
         const dt = Math.min((time - last) / 1000, 0.05);
