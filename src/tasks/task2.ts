@@ -286,7 +286,6 @@ export function renderCodeTask() {
       </div>
       <span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span>
     `;
-    setActiveTab("console");
   };
 
   // Оба Play — и в тулбаре, и в инспекторе — запускают одну и ту же проверку.

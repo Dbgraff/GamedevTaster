@@ -114,6 +114,18 @@ export function renderNumbersTask() {
   document.querySelector("#play-btn")?.addEventListener("click", runJump);
   document.querySelector("#toolbar-play")?.addEventListener("click", runJump);
 
-  nextBtn.addEventListener("click", renderCodeTask);
+  // Пробел — та же команда, что и Play, чтобы не тянуться к кнопке каждый раз.
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      runJump();
+    }
+  };
+  window.addEventListener("keydown", onKeyDown);
+
+  nextBtn.addEventListener("click", () => {
+    window.removeEventListener("keydown", onKeyDown);
+    renderCodeTask();
+  });
   setupHints();
 }

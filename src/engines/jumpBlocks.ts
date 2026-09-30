@@ -175,10 +175,16 @@ export class BlockJumpSimulator {
     ctx.fillStyle = "#2e3352";
     ctx.fillRect(0, groundY, width, height - groundY);
 
-    const size = 36;
-    ctx.fillStyle = "#a78bfa";
+    const size = 40;
+    ctx.fillStyle = "#7dd3fc";
     ctx.beginPath();
     ctx.roundRect(width / 2 - size / 2, posY - size, size, size, 8);
+    ctx.fill();
+
+    ctx.fillStyle = "#0f1220";
+    ctx.beginPath();
+    ctx.arc(width / 2 - 8, posY - size + 14, 3, 0, Math.PI * 2);
+    ctx.arc(width / 2 + 8, posY - size + 14, 3, 0, Math.PI * 2);
     ctx.fill();
   }
 }

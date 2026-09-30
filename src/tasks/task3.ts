@@ -42,15 +42,14 @@ export function renderTask3() {
           <div class="deco-scene" id="scene-view">
             <div class="deco-ground"></div>
             <div class="deco-player" id="cube3"></div>
-            <div class="control-hint" id="control-hint" style="display:none">← → двигай, Пробел — прыжок</div>
+            <div class="control-hint">← → двигай кубик сам, в любой момент</div>
           </div>
           <div class="deco-scene" id="console-view" style="display:none; background-image:none;">
             <div class="console" id="console-output">
               <span class="muted">&gt; Собери шаги и нажми Play, чтобы увидеть разбор здесь.</span>
             </div>
           </div>
-          <div class="viewport-status" id="viewport-status">Собери шаги и нажми Play.</div>
-          <button id="play-cube-btn" class="text-btn" style="display:none; padding: 0 16px 10px;">🎮 Управлять кубиком самому</button>
+          <div class="viewport-status" id="viewport-status">Собери шаги и нажми Play — а пока можешь подвигать кубик стрелками.</div>
         </div>
 
         <div class="inspector">
@@ -92,8 +91,6 @@ export function renderTask3() {
   const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
   const cube = document.querySelector<HTMLDivElement>("#cube3")!;
-  const playBtn = document.querySelector<HTMLButtonElement>("#play-cube-btn")!;
-  const controlHint = document.querySelector<HTMLDivElement>("#control-hint")!;
 
   const setActiveTab = (tab: "scene" | "console") => {
     tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
@@ -170,6 +167,38 @@ export function renderTask3() {
     renderSequence();
   });
 
+  // ---------- Ручное управление кубиком — включено всегда, а не по кнопке ----------
+  // Пока играет скриптовая анимация после Play, ручной ввод на секунду глушится,
+  // чтобы не спорить с ней за transform/left одного и того же элемента.
+  let manualEnabled = true;
+  let posX = 50; // % от ширины сцены
+  const heldKeys = new Set<string>();
+  let lastControlTime = 0;
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    const key = e.key.toLowerCase();
+    if (key === "arrowleft" || key === "arrowright" || key === "a" || key === "d") {
+      heldKeys.add(key);
+    }
+  };
+  const onKeyUp = (e: KeyboardEvent) => heldKeys.delete(e.key.toLowerCase());
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+
+  const controlLoop = (time: number) => {
+    const dt = Math.min((time - lastControlTime) / 1000, 0.05);
+    lastControlTime = time;
+    if (manualEnabled) {
+      const speed = 45; // %/сек
+      if (heldKeys.has("arrowleft") || heldKeys.has("a")) posX -= speed * dt;
+      if (heldKeys.has("arrowright") || heldKeys.has("d")) posX += speed * dt;
+      posX = Math.max(6, Math.min(94, posX));
+      cube.style.left = `${posX}%`;
+    }
+    controlLoopId = requestAnimationFrame(controlLoop);
+  };
+  let controlLoopId = requestAnimationFrame(controlLoop);
+
   const runSequence = () => {
     const hasAll = MOVE_CORRECT_ORDER.every((id) => sequence.includes(id));
     if (!hasAll) {
@@ -186,6 +215,9 @@ export function renderTask3() {
     const ok = result.velocityAtPhysics !== 0 && JSON.stringify(sequence) === JSON.stringify(MOVE_CORRECT_ORDER);
     const moved = result.velocityAtPhysics !== 0;
 
+    manualEnabled = false;
+    heldKeys.clear();
+    cube.style.left = "";
     cube.classList.remove("moving", "stuck");
     void cube.offsetWidth; // перезапуск CSS-анимации
     cube.classList.add(moved ? "moving" : "stuck");
@@ -201,102 +233,38 @@ export function renderTask3() {
       verdict = "Кубик сдвинулся, но порядок всё равно не тот эталонный — в реальном коде так тоже бывает: вроде работает, а на деле собрано не так, как задумано.";
     }
 
-    viewportStatus.textContent = ok ? "Готово — порядок верный." : moved ? "Двигается, но не так, как задумано — смотри Console." : "Не двигается — смотри разбор в Console.";
-    viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
-
     consoleOutput.innerHTML = `
       ${result.log.map((line) => `<div><span class="info">[i]</span> ${line}</div>`).join("")}
       <div style="margin-top:10px"><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
     `;
 
-    // Сначала даём доиграть анимации на сцене, и только потом переключаем
-    // на разбор — иначе игрок даже не видит, что сделал кубик.
+    // Даём доиграть анимации, прежде чем вернуть управление игроку — иначе
+    // ручной ввод и скриптовая анимация будут спорить за один и тот же transform.
     const animationMs = moved ? 1800 : 400;
     window.setTimeout(() => {
-      setActiveTab("console");
-      if (ok) {
-        nextBtn.disabled = false;
-        playBtn.style.display = "";
-      }
+      manualEnabled = true;
+      posX = 50;
+      cube.classList.remove("moving", "stuck");
     }, animationMs);
+
+    viewportStatus.textContent = ok
+      ? "Готово — порядок верный. Открой Console, если хочешь посмотреть разбор, или просто жми «Дальше»."
+      : moved
+      ? "Двигается, но не так, как задумано — открой Console, чтобы понять почему."
+      : "Не двигается — открой Console, чтобы понять почему.";
+    viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
+
+    if (ok) nextBtn.disabled = false;
   };
 
-  // ---------- Песочница: поуправлять кубиком самому после решения задачи ----------
-  let controlsActive = false;
-  let posX = 50; // % от ширины сцены
-  const heldKeys = new Set<string>();
-  let lastControlTime = 0;
-  let controlLoopId: number | null = null;
-
-  const onKeyDown = (e: KeyboardEvent) => {
-    const key = e.key.toLowerCase();
-    if (key === "arrowleft" || key === "arrowright" || key === "a" || key === "d") {
-      heldKeys.add(key);
-    }
-    if (e.code === "Space") {
-      e.preventDefault();
-      cube.classList.remove("jumping");
-      void cube.offsetWidth;
-      cube.classList.add("jumping");
-    }
-  };
-  const onKeyUp = (e: KeyboardEvent) => heldKeys.delete(e.key.toLowerCase());
-
-  const controlLoop = (time: number) => {
-    if (!controlsActive) return;
-    const dt = Math.min((time - lastControlTime) / 1000, 0.05);
-    lastControlTime = time;
-    const speed = 45; // %/сек
-    if (heldKeys.has("arrowleft") || heldKeys.has("a")) posX -= speed * dt;
-    if (heldKeys.has("arrowright") || heldKeys.has("d")) posX += speed * dt;
-    posX = Math.max(6, Math.min(94, posX));
-    cube.style.left = `${posX}%`;
-    controlLoopId = requestAnimationFrame(controlLoop);
-  };
-
-  const startControls = () => {
-    if (controlsActive) return;
-    controlsActive = true;
-    cube.classList.remove("moving", "stuck");
-    cube.style.left = "50%";
-    posX = 50;
-    controlHint.style.display = "block";
-    viewportStatus.textContent = "Песочница: пробуй сам, как двигается и прыгает кубик.";
-    viewportStatus.className = "viewport-status";
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    lastControlTime = performance.now();
-    controlLoopId = requestAnimationFrame(controlLoop);
-  };
-
-  const stopControls = () => {
-    if (!controlsActive) return;
-    controlsActive = false;
-    heldKeys.clear();
-    window.removeEventListener("keydown", onKeyDown);
-    window.removeEventListener("keyup", onKeyUp);
-    if (controlLoopId !== null) cancelAnimationFrame(controlLoopId);
-    cube.style.left = "";
-    controlHint.style.display = "none";
-  };
-
-  playBtn.addEventListener("click", () => {
-    setActiveTab("scene");
-    startControls();
-  });
-
-  runBtn.addEventListener("click", () => {
-    stopControls();
-    runSequence();
-  });
-  toolbarPlay.addEventListener("click", () => {
-    stopControls();
-    runSequence();
-  });
+  runBtn.addEventListener("click", runSequence);
+  toolbarPlay.addEventListener("click", runSequence);
 
   renderSequence();
   nextBtn.addEventListener("click", () => {
-    stopControls();
+    cancelAnimationFrame(controlLoopId);
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("keyup", onKeyUp);
     renderReflection();
   });
   setupHints();
