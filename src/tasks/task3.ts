@@ -25,7 +25,7 @@ export function renderTask3() {
           <div class="task-info">
             <p class="eyebrow">Задача 3 из ${TASK_TITLES.length}</p>
             <h2>Кубик учится двигаться</h2>
-            <p class="lead">Прыгать кубик уже умеет. Теперь научим его двигаться влево-вправо — собери шаги в правильном порядке.</p>
+            <p class="lead">Прыгать кубик уже умеет. Теперь научим его двигаться влево-вправо — собери шаги в правильном порядке и нажми Play.</p>
             ${renderHintBlock([
               "Подумай: что должно случиться раньше — движок должен понять, что вообще нажал игрок, или сразу применить скорость?",
               "Порядок такой: сначала считать ввод, потом посчитать направление, потом умножить на скорость, потом применить — и только в конце физика двигает объект.",
@@ -39,17 +39,23 @@ export function renderTask3() {
             <button type="button" class="tab-btn active" data-tab="scene">Scene</button>
             <button type="button" class="tab-btn" data-tab="console">Console</button>
           </div>
-          <div class="deco-scene" id="scene-view">
-            <div class="deco-ground"></div>
-            <div class="deco-player" id="cube3"></div>
-            <div class="control-hint">← → двигай кубик сам, в любой момент</div>
-          </div>
-          <div class="deco-scene" id="console-view" style="display:none; background-image:none;">
-            <div class="console" id="console-output">
-              <span class="muted">&gt; Собери шаги и нажми Play, чтобы увидеть разбор здесь.</span>
+          <div class="viewport-stage">
+            <div class="deco-scene" id="scene-view">
+              <div class="deco-ground"></div>
+              <div class="deco-player" id="cube3"></div>
+              <div class="control-hint" id="control-hint" style="display:none">🎮 ← → двигай, Пробел — прыжок</div>
+            </div>
+            <div class="console-drawer" id="console-drawer">
+              <div class="console-drawer-header">
+                <span>Console</span>
+                <button type="button" id="console-close" class="console-drawer-close" aria-label="Закрыть">✕</button>
+              </div>
+              <div class="console" id="console-output">
+                <span class="muted">&gt; Нажми Play, чтобы увидеть разбор здесь.</span>
+              </div>
             </div>
           </div>
-          <div class="viewport-status" id="viewport-status">Собери шаги и нажми Play — а пока можешь подвигать кубик стрелками.</div>
+          <div class="viewport-status" id="viewport-status">Собери шаги и нажми Play.</div>
         </div>
 
         <div class="inspector">
@@ -82,8 +88,7 @@ export function renderTask3() {
   `);
 
   const sequenceEl = document.querySelector<HTMLDivElement>("#sequence")!;
-  const sceneView = document.querySelector<HTMLDivElement>("#scene-view")!;
-  const consoleView = document.querySelector<HTMLDivElement>("#console-view")!;
+  const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
   const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
@@ -91,13 +96,20 @@ export function renderTask3() {
   const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
   const cube = document.querySelector<HTMLDivElement>("#cube3")!;
+  const controlHint = document.querySelector<HTMLDivElement>("#control-hint")!;
 
-  const setActiveTab = (tab: "scene" | "console") => {
-    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
-    sceneView.style.display = tab === "scene" ? "" : "none";
-    consoleView.style.display = tab === "console" ? "flex" : "none";
+  const openConsole = () => {
+    consoleDrawer.classList.add("open");
+    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "console"));
   };
-  tabButtons.forEach((btn) => btn.addEventListener("click", () => setActiveTab(btn.dataset.tab as "scene" | "console")));
+  const closeConsole = () => {
+    consoleDrawer.classList.remove("open");
+    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "scene"));
+  };
+  tabButtons.forEach((btn) =>
+    btn.addEventListener("click", () => (btn.dataset.tab === "console" ? openConsole() : closeConsole()))
+  );
+  document.querySelector("#console-close")?.addEventListener("click", closeConsole);
 
   function renderSequence() {
     if (sequence.length === 0) {
@@ -167,18 +179,26 @@ export function renderTask3() {
     renderSequence();
   });
 
-  // ---------- Ручное управление кубиком — включено всегда, а не по кнопке ----------
-  // Пока играет скриптовая анимация после Play, ручной ввод на секунду глушится,
-  // чтобы не спорить с ней за transform/left одного и того же элемента.
-  let manualEnabled = true;
+  // ---------- Ручное управление — разблокируется только после первого Play ----------
+  // Даже разблокированное, оно честно воспроизводит баг: если сборка не работает,
+  // стрелки просто не двигают кубик — ровно то же самое, что видно в автопрогоне.
+  let controlsUnlocked = false;
+  let animating = false;
   let posX = 50; // % от ширины сцены
   const heldKeys = new Set<string>();
   let lastControlTime = 0;
 
   const onKeyDown = (e: KeyboardEvent) => {
+    if (!controlsUnlocked) return;
     const key = e.key.toLowerCase();
     if (key === "arrowleft" || key === "arrowright" || key === "a" || key === "d") {
       heldKeys.add(key);
+    }
+    if (e.code === "Space") {
+      e.preventDefault();
+      cube.classList.remove("jumping");
+      void cube.offsetWidth;
+      cube.classList.add("jumping");
     }
   };
   const onKeyUp = (e: KeyboardEvent) => heldKeys.delete(e.key.toLowerCase());
@@ -188,12 +208,20 @@ export function renderTask3() {
   const controlLoop = (time: number) => {
     const dt = Math.min((time - lastControlTime) / 1000, 0.05);
     lastControlTime = time;
-    if (manualEnabled) {
-      const speed = 45; // %/сек
-      if (heldKeys.has("arrowleft") || heldKeys.has("a")) posX -= speed * dt;
-      if (heldKeys.has("arrowright") || heldKeys.has("d")) posX += speed * dt;
-      posX = Math.max(6, Math.min(94, posX));
-      cube.style.left = `${posX}%`;
+    if (controlsUnlocked && !animating) {
+      // Пересчитываем прямо здесь и сейчас — если игрок поменял блоки местами,
+      // это сразу отражается на том, реагирует кубик на стрелки или нет.
+      const live = simulateMoveSequence(sequence);
+      const worksNow = live.velocityAtPhysics !== 0;
+
+      if (worksNow) {
+        const speed = 45; // %/сек
+        if (heldKeys.has("arrowleft") || heldKeys.has("a")) posX -= speed * dt;
+        if (heldKeys.has("arrowright") || heldKeys.has("d")) posX += speed * dt;
+        posX = Math.max(6, Math.min(94, posX));
+        cube.style.left = `${posX}%`;
+      }
+      // Если сборка не работает — кубик просто не реагирует, что бы ни зажималось.
     }
     controlLoopId = requestAnimationFrame(controlLoop);
   };
@@ -207,7 +235,7 @@ export function renderTask3() {
       return;
     }
 
-    setActiveTab("scene");
+    closeConsole();
 
     // Настоящий пошаговый прогон, а не сверка с эталонным массивом — интерпретатор
     // сам вычисляет, что реально произойдёт при таком порядке шагов.
@@ -215,9 +243,10 @@ export function renderTask3() {
     const ok = result.velocityAtPhysics !== 0 && JSON.stringify(sequence) === JSON.stringify(MOVE_CORRECT_ORDER);
     const moved = result.velocityAtPhysics !== 0;
 
-    manualEnabled = false;
+    animating = true;
     heldKeys.clear();
     cube.style.left = "";
+    posX = 50;
     cube.classList.remove("moving", "stuck");
     void cube.offsetWidth; // перезапуск CSS-анимации
     cube.classList.add(moved ? "moving" : "stuck");
@@ -226,7 +255,7 @@ export function renderTask3() {
     if (!result.ranPhysics) {
       verdict = "Физика так и не применилась — без неё кубик никогда не сдвинется, что бы ни было посчитано до этого.";
     } else if (!moved) {
-      verdict = "Кубик не сдвинулся — velocity в момент, когда физика её прочитала, оказался нулевым. Посмотри в Console, на каком шаге это произошло.";
+      verdict = "Кубик не сдвинулся — velocity в момент, когда физика её прочитала, оказался нулевым. Ниже — что реально выполнилось по шагам.";
     } else if (ok) {
       verdict = "Точно! Обрати внимание: то же самое разбиение на шаги — считать ввод, посчитать значение, применить к объекту — повторяется почти в любой механике движка, не только в прыжке.";
     } else {
@@ -238,23 +267,27 @@ export function renderTask3() {
       <div style="margin-top:10px"><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
     `;
 
-    // Даём доиграть анимации, прежде чем вернуть управление игроку — иначе
-    // ручной ввод и скриптовая анимация будут спорить за один и тот же transform.
     const animationMs = moved ? 1800 : 400;
     window.setTimeout(() => {
-      manualEnabled = true;
-      posX = 50;
+      animating = false;
       cube.classList.remove("moving", "stuck");
+
+      if (!controlsUnlocked) {
+        controlsUnlocked = true;
+        controlHint.style.display = "block";
+      }
+
+      openConsole();
+
+      viewportStatus.textContent = ok
+        ? "Готово — порядок верный. Можешь ещё погонять кубик стрелками или жать «Дальше»."
+        : moved
+        ? "Двигается, но не так, как задумано — попробуй стрелками, баг проявится и вручную."
+        : "Не двигается — попробуй стрелками, они честно повторят тот же результат.";
+      viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
+
+      if (ok) nextBtn.disabled = false;
     }, animationMs);
-
-    viewportStatus.textContent = ok
-      ? "Готово — порядок верный. Открой Console, если хочешь посмотреть разбор, или просто жми «Дальше»."
-      : moved
-      ? "Двигается, но не так, как задумано — открой Console, чтобы понять почему."
-      : "Не двигается — открой Console, чтобы понять почему.";
-    viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
-
-    if (ok) nextBtn.disabled = false;
   };
 
   runBtn.addEventListener("click", runSequence);

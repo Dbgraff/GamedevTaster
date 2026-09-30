@@ -268,6 +268,28 @@ body:has(.editor-shell) {
 .tab-btn.active { background: #1e1e1e; color: var(--accent); border: 1px solid #101011; border-bottom: 1px solid #1e1e1e; margin-bottom: -1px; }
 
 .viewport { flex: 1; position: relative; min-height: 280px; background: #101014; }
+
+/* Сцена + выезжающая снизу консоль (задача 3) — консоль перекрывает только
+   нижнюю половину, сцену видно всегда, крестиком можно закрыть в любой момент. */
+.viewport-stage { flex: 1; position: relative; min-height: 280px; overflow: hidden; }
+.viewport-stage .deco-scene { position: absolute; inset: 0; }
+.console-drawer {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 50%;
+  background: #101014; border-top: 1px solid #333;
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+  z-index: 5;
+}
+.console-drawer.open { transform: translateY(0); }
+.console-drawer-header {
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: #1b1b1c; border-bottom: 1px solid #333;
+  font-size: 12px; color: #9a9a9a;
+}
+.console-drawer-close { background: none; border: none; color: #9a9a9a; font-size: 15px; cursor: pointer; padding: 2px 6px; line-height: 1; }
+.console-drawer-close:hover { color: #fff; }
+.console-drawer .console { flex: 1; height: auto; }
 .viewport canvas { position: absolute; inset: 0; width: 100%; height: 100%; border: none; border-radius: 0; margin: 0; display: block; }
 
 .viewport-status {

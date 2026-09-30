@@ -52,6 +52,8 @@ export const TASK_TITLES = [
   "Финальный баг",
 ];
 export const TASKS_BUILT = 3; // сколько заданий пока реально реализовано
+// Задания, где после проверки можно ещё и самому порулить персонажем с клавиатуры.
+const KEYBOARD_CONTROL_TASKS = new Set([1, 3]);
 
 export function renderTaskListPanel(currentIndex: number): string {
   return `
@@ -63,7 +65,8 @@ export function renderTaskListPanel(currentIndex: number): string {
       const locked = n > TASKS_BUILT;
       const cls = current ? "hierarchy-item selected" : locked ? "hierarchy-item locked" : "hierarchy-item";
       const marker = done ? "✓" : String(n);
-      return `<div class="${cls}"><span class="task-marker">${marker}</span>${title}</div>`;
+      const gamepad = KEYBOARD_CONTROL_TASKS.has(n) ? ` <span title="Можно управлять с клавиатуры">🎮</span>` : "";
+      return `<div class="${cls}"><span class="task-marker">${marker}</span>${title}${gamepad}</div>`;
     }).join("")}
   `;
 }
