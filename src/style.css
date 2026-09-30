@@ -272,7 +272,7 @@ body:has(.editor-shell) {
 /* Сцена + выезжающая снизу консоль (задача 3) — консоль перекрывает только
    нижнюю половину, сцену видно всегда, крестиком можно закрыть в любой момент. */
 .viewport-stage { flex: 1; position: relative; min-height: 280px; overflow: hidden; }
-.viewport-stage .deco-scene { position: absolute; inset: 0; }
+.viewport-stage .deco-scene, .viewport-stage .viewport { position: absolute; inset: 0; }
 .console-drawer {
   position: absolute; left: 0; right: 0; bottom: 0; height: 50%;
   background: #101014; border-top: 1px solid #333;
@@ -378,12 +378,6 @@ body:has(.editor-shell) {
   100% { transform: translateX(-50%) translateY(0); }
 }
 .deco-player.jumping { animation: bounce-demo 0.5s ease-out; }
-
-.control-hint {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  font-size: 12px; color: #9a9a9a; background: rgba(0,0,0,0.4);
-  padding: 4px 10px; border-radius: 6px; pointer-events: none;
-}
 
 /* Hero-оверлей поверх сцены (главное меню) */
 .hero-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; }

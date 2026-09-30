@@ -27,11 +27,22 @@ export function renderNumbersTask() {
 
         <div class="scene-col">
           <div class="scene-tabs">
-            <button type="button" class="tab-btn active">Scene</button>
-            <button type="button" class="tab-btn">Game</button>
+            <button type="button" class="tab-btn active" data-tab="scene">Scene</button>
+            <button type="button" class="tab-btn" data-tab="console">Console</button>
           </div>
-          <div class="viewport">
-            <canvas id="canvas"></canvas>
+          <div class="viewport-stage">
+            <div class="viewport" id="scene-view">
+              <canvas id="canvas"></canvas>
+            </div>
+            <div class="console-drawer" id="console-drawer">
+              <div class="console-drawer-header">
+                <span>Console</span>
+                <button type="button" id="console-close" class="console-drawer-close" aria-label="Закрыть">✕</button>
+              </div>
+              <div class="console" id="console-output">
+                <span class="muted">&gt; Нажми Play, чтобы увидеть результат здесь.</span>
+              </div>
+            </div>
           </div>
           <div class="viewport-status" id="status">Готово к запуску.</div>
         </div>
@@ -79,6 +90,22 @@ export function renderNumbersTask() {
   const gc = document.querySelector<HTMLInputElement>("#gc")!;
   const status = document.querySelector<HTMLDivElement>("#status")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
+  const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
+  const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
+  const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
+
+  const openConsole = () => {
+    consoleDrawer.classList.add("open");
+    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "console"));
+  };
+  const closeConsole = () => {
+    consoleDrawer.classList.remove("open");
+    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "scene"));
+  };
+  tabButtons.forEach((btn) =>
+    btn.addEventListener("click", () => (btn.dataset.tab === "console" ? openConsole() : closeConsole()))
+  );
+  document.querySelector("#console-close")?.addEventListener("click", closeConsole);
 
   const syncParams = () => {
     demo.setParams({
@@ -101,9 +128,16 @@ export function renderNumbersTask() {
 
   demo.onOutcome = (outcome, meta) => {
     state.numbersAttempts += 1;
-    status.textContent = messages[outcome](meta.dip);
-    status.className = "viewport-status " + (outcome === "good-jump" ? "ok" : outcome === "idle" ? "" : "warn");
-    if (outcome === "good-jump") nextBtn.disabled = false;
+    const text = messages[outcome](meta.dip);
+    const ok = outcome === "good-jump";
+
+    status.textContent = text;
+    status.className = "viewport-status " + (ok ? "ok" : outcome === "idle" ? "" : "warn");
+
+    consoleOutput.innerHTML = `<div><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${text}</span></div>`;
+    openConsole();
+
+    if (ok) nextBtn.disabled = false;
   };
 
   const runJump = () => {
@@ -119,6 +153,7 @@ export function renderNumbersTask() {
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.code === "Space") {
       e.preventDefault();
+      closeConsole();
       runJump();
     }
   };

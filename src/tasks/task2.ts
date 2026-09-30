@@ -63,12 +63,18 @@ export function renderCodeTask() {
             <button type="button" class="tab-btn active" data-tab="game">Game</button>
             <button type="button" class="tab-btn" data-tab="console">Console</button>
           </div>
-          <div class="viewport" id="game-view">
-            <canvas id="canvas"></canvas>
-          </div>
-          <div class="deco-scene" id="console-view" style="display:none; background-image:none;">
-            <div class="console" id="console-output">
-              <span class="muted">&gt; Собери блоки и нажми Play, чтобы увидеть разбор здесь.</span>
+          <div class="viewport-stage">
+            <div class="viewport" id="game-view">
+              <canvas id="canvas"></canvas>
+            </div>
+            <div class="console-drawer" id="console-drawer">
+              <div class="console-drawer-header">
+                <span>Console</span>
+                <button type="button" id="console-close" class="console-drawer-close" aria-label="Закрыть">✕</button>
+              </div>
+              <div class="console" id="console-output">
+                <span class="muted">&gt; Собери блоки и нажми Play, чтобы увидеть разбор здесь.</span>
+              </div>
             </div>
           </div>
           <div class="viewport-status" id="viewport-status">Собери блоки и нажми Play.</div>
@@ -113,20 +119,25 @@ export function renderCodeTask() {
   resizeObserver.observe(canvas);
   const sequenceEl = document.querySelector<HTMLDivElement>("#sequence")!;
   const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
-  const gameView = document.querySelector<HTMLDivElement>("#game-view")!;
-  const consoleView = document.querySelector<HTMLDivElement>("#console-view")!;
+  const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
   const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
 
-  const setActiveTab = (tab: "game" | "console") => {
-    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
-    gameView.style.display = tab === "game" ? "" : "none";
-    consoleView.style.display = tab === "console" ? "flex" : "none";
+  const openConsole = () => {
+    consoleDrawer.classList.add("open");
+    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "console"));
   };
-  tabButtons.forEach((btn) => btn.addEventListener("click", () => setActiveTab(btn.dataset.tab as "game" | "console")));
+  const closeConsole = () => {
+    consoleDrawer.classList.remove("open");
+    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "game"));
+  };
+  tabButtons.forEach((btn) =>
+    btn.addEventListener("click", () => (btn.dataset.tab === "console" ? openConsole() : closeConsole()))
+  );
+  document.querySelector("#console-close")?.addEventListener("click", closeConsole);
 
   function renderSequence() {
     if (sequence.length === 0) {
@@ -207,7 +218,7 @@ export function renderCodeTask() {
     toolbarPlay.disabled = true;
     viewportStatus.textContent = "Запускаю проверку…";
     viewportStatus.className = "viewport-status";
-    setActiveTab("game");
+    closeConsole();
     consoleOutput.innerHTML = `<span class="muted">&gt; Запускаю проверку…</span>`;
 
     const logs1: string[] = [];
@@ -286,6 +297,7 @@ export function renderCodeTask() {
       </div>
       <span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span>
     `;
+    openConsole();
   };
 
   // Оба Play — и в тулбаре, и в инспекторе — запускают одну и ту же проверку.

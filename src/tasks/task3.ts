@@ -26,6 +26,7 @@ export function renderTask3() {
             <p class="eyebrow">Задача 3 из ${TASK_TITLES.length}</p>
             <h2>Кубик учится двигаться</h2>
             <p class="lead">Прыгать кубик уже умеет. Теперь научим его двигаться влево-вправо — собери шаги в правильном порядке и нажми Play.</p>
+            <p class="lead">🎮 Управление: стрелки или A/D — движение (заработает после Play), пробел — прыжок (работает сразу, независимо от сборки).</p>
             ${renderHintBlock([
               "Подумай: что должно случиться раньше — движок должен понять, что вообще нажал игрок, или сразу применить скорость?",
               "Порядок такой: сначала считать ввод, потом посчитать направление, потом умножить на скорость, потом применить — и только в конце физика двигает объект.",
@@ -43,7 +44,6 @@ export function renderTask3() {
             <div class="deco-scene" id="scene-view">
               <div class="deco-ground"></div>
               <div class="deco-player" id="cube3"></div>
-              <div class="control-hint" id="control-hint" style="display:none">🎮 ← → двигай, Пробел — прыжок</div>
             </div>
             <div class="console-drawer" id="console-drawer">
               <div class="console-drawer-header">
@@ -96,7 +96,6 @@ export function renderTask3() {
   const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
   const cube = document.querySelector<HTMLDivElement>("#cube3")!;
-  const controlHint = document.querySelector<HTMLDivElement>("#control-hint")!;
 
   const openConsole = () => {
     consoleDrawer.classList.add("open");
@@ -179,29 +178,42 @@ export function renderTask3() {
     renderSequence();
   });
 
-  // ---------- Ручное управление — разблокируется только после первого Play ----------
-  // Даже разблокированное, оно честно воспроизводит баг: если сборка не работает,
-  // стрелки просто не двигают кубик — ровно то же самое, что видно в автопрогоне.
+  // ---------- Ручное управление ----------
+  // Прыжок работает всегда, независимо от сборки — кубик "уже умеет" это с задачи 1.
+  // Движение разблокируется только после первого Play и честно воспроизводит баг:
+  // если сборка не работает, стрелки просто не двигают кубик — как в автопрогоне.
   let controlsUnlocked = false;
   let animating = false;
   let posX = 50; // % от ширины сцены
-  const heldKeys = new Set<string>();
+  const heldKeys = new Set<"left" | "right">();
   let lastControlTime = 0;
+  let isJumping = false;
+  const JUMP_MS = 500; // должно совпадать с длительностью .deco-player.jumping в CSS
 
+  // Определяем A/D по физическому коду клавиши (KeyA/KeyD), а не по e.key —
+  // иначе при включённой русской раскладке (ф/в вместо a/d) движение не сработает.
   const onKeyDown = (e: KeyboardEvent) => {
-    if (!controlsUnlocked) return;
-    const key = e.key.toLowerCase();
-    if (key === "arrowleft" || key === "arrowright" || key === "a" || key === "d") {
-      heldKeys.add(key);
-    }
     if (e.code === "Space") {
       e.preventDefault();
-      cube.classList.remove("jumping");
-      void cube.offsetWidth;
-      cube.classList.add("jumping");
+      if (!isJumping) {
+        isJumping = true;
+        cube.classList.remove("jumping");
+        void cube.offsetWidth;
+        cube.classList.add("jumping");
+        window.setTimeout(() => {
+          isJumping = false;
+        }, JUMP_MS);
+      }
+      return;
     }
+    if (!controlsUnlocked) return;
+    if (e.key === "ArrowLeft" || e.code === "KeyA") heldKeys.add("left");
+    if (e.key === "ArrowRight" || e.code === "KeyD") heldKeys.add("right");
   };
-  const onKeyUp = (e: KeyboardEvent) => heldKeys.delete(e.key.toLowerCase());
+  const onKeyUp = (e: KeyboardEvent) => {
+    if (e.key === "ArrowLeft" || e.code === "KeyA") heldKeys.delete("left");
+    if (e.key === "ArrowRight" || e.code === "KeyD") heldKeys.delete("right");
+  };
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
 
@@ -216,8 +228,8 @@ export function renderTask3() {
 
       if (worksNow) {
         const speed = 45; // %/сек
-        if (heldKeys.has("arrowleft") || heldKeys.has("a")) posX -= speed * dt;
-        if (heldKeys.has("arrowright") || heldKeys.has("d")) posX += speed * dt;
+        if (heldKeys.has("left")) posX -= speed * dt;
+        if (heldKeys.has("right")) posX += speed * dt;
         posX = Math.max(6, Math.min(94, posX));
         cube.style.left = `${posX}%`;
       }
@@ -272,10 +284,7 @@ export function renderTask3() {
       animating = false;
       cube.classList.remove("moving", "stuck");
 
-      if (!controlsUnlocked) {
-        controlsUnlocked = true;
-        controlHint.style.display = "block";
-      }
+      controlsUnlocked = true;
 
       openConsole();
 
