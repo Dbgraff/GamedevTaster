@@ -1,5 +1,5 @@
 import { BlockJumpSimulator, referencePeakHeight, type BlockId } from "../engines/jumpBlocks";
-import { render, renderToolbar, renderTaskListPanel, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
+import { render, renderTaskListPanel, renderResizeHandle, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
 import { state } from "../state";
 import { renderTask3 } from "./task3";
 
@@ -40,8 +40,6 @@ export function renderCodeTask() {
 
   render(`
     <div class="editor-shell">
-      ${renderToolbar({ id: "toolbar-play", icon: "play", label: "Запустить" })}
-
       <div class="editor-main">
         <div class="hierarchy">
           ${renderTaskListPanel(2)}
@@ -57,6 +55,8 @@ export function renderCodeTask() {
           </div>
           <button id="next-btn" class="secondary full next-btn" disabled>Дальше →</button>
         </div>
+
+        ${renderResizeHandle("left")}
 
         <div class="scene-col">
           <div class="scene-tabs">
@@ -79,6 +79,8 @@ export function renderCodeTask() {
           </div>
           <div class="viewport-status" id="viewport-status">Собери блоки и нажми Play.</div>
         </div>
+
+        ${renderResizeHandle("right")}
 
         <div class="inspector">
           <div class="inspector-header">
@@ -108,8 +110,6 @@ export function renderCodeTask() {
           <button id="run-btn" class="primary full">▶ Play</button>
         </div>
       </div>
-
-      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
 
@@ -122,7 +122,6 @@ export function renderCodeTask() {
   const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
-  const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
 
@@ -215,7 +214,6 @@ export function renderCodeTask() {
       return;
     }
     runBtn.disabled = true;
-    toolbarPlay.disabled = true;
     viewportStatus.textContent = "Запускаю проверку…";
     viewportStatus.className = "viewport-status";
     closeConsole();
@@ -229,7 +227,6 @@ export function renderCodeTask() {
     const trial2 = await simulator.runTrial(sequence, 180, 8, 15, (line) => logs2.push(line)); // как будто персонаж только что падал
 
     runBtn.disabled = false;
-    toolbarPlay.disabled = false;
 
     const maxH = Math.max(trial1.peakHeight, trial2.peakHeight, 1);
     const bar = (h: number) => Math.min(100, Math.round((h / maxH) * 100));
@@ -300,9 +297,7 @@ export function renderCodeTask() {
     openConsole();
   };
 
-  // Оба Play — и в тулбаре, и в инспекторе — запускают одну и ту же проверку.
   runBtn.addEventListener("click", runSequence);
-  toolbarPlay.addEventListener("click", runSequence);
 
   renderSequence();
   nextBtn.addEventListener("click", renderTask3);

@@ -71,6 +71,82 @@ export function renderTaskListPanel(currentIndex: number): string {
   `;
 }
 
+// ---------- Растягиваемые боковые панели (Hierarchy слева, Inspector справа) ----------
+export function renderResizeHandle(side: "left" | "right"): string {
+  return `<div class="resize-handle resize-handle--${side}" data-resize-handle><div class="resize-grip"><span></span><span></span><span></span></div></div>`;
+}
+
+// Слушатели вешаются один раз на уровне модуля (document/window), а не при
+// каждом рендере экрана — иначе при каждой навигации копился бы новый набор
+// слушателей поверх уже отрисованных (и тут же удалённых) элементов.
+interface DragState {
+  target: HTMLElement;
+  startX: number;
+  startWidth: number;
+  invert: boolean;
+  min: number;
+  max: number;
+}
+let dragState: DragState | null = null;
+
+function beginResize(handle: HTMLElement, clientX: number) {
+  const prevEl = handle.previousElementSibling as HTMLElement | null;
+  const nextEl = handle.nextElementSibling as HTMLElement | null;
+  let target: HTMLElement | null = null;
+  let invert = false;
+  if (prevEl?.classList.contains("hierarchy")) {
+    target = prevEl;
+    invert = false;
+  } else if (nextEl?.classList.contains("inspector")) {
+    target = nextEl;
+    invert = true;
+  }
+  if (!target) return;
+  const isHierarchy = target.classList.contains("hierarchy");
+  dragState = {
+    target,
+    startX: clientX,
+    startWidth: target.getBoundingClientRect().width,
+    invert,
+    min: isHierarchy ? 260 : 240,
+    max: isHierarchy ? 520 : 460,
+  };
+  document.body.style.cursor = "col-resize";
+  document.body.style.userSelect = "none";
+}
+
+function updateResize(clientX: number) {
+  if (!dragState) return;
+  const delta = dragState.invert ? dragState.startX - clientX : clientX - dragState.startX;
+  const width = Math.max(dragState.min, Math.min(dragState.max, dragState.startWidth + delta));
+  dragState.target.style.width = `${width}px`;
+}
+
+function endResize() {
+  if (!dragState) return;
+  dragState = null;
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
+}
+
+document.addEventListener("mousedown", (e) => {
+  const handle = (e.target as HTMLElement).closest<HTMLElement>("[data-resize-handle]");
+  if (handle) beginResize(handle, e.clientX);
+});
+window.addEventListener("mousemove", (e) => updateResize(e.clientX));
+window.addEventListener("mouseup", endResize);
+
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    const handle = (e.target as HTMLElement).closest<HTMLElement>("[data-resize-handle]");
+    if (handle) beginResize(handle, e.touches[0].clientX);
+  },
+  { passive: true }
+);
+window.addEventListener("touchmove", (e) => dragState && updateResize(e.touches[0].clientX), { passive: true });
+window.addEventListener("touchend", endResize);
+
 // ---------- Двухуровневые подсказки ----------
 // hints: [текст 1 уровня (наводящий вопрос), текст 2 уровня (прямое указание)]
 export function renderHintBlock(hints: [string, string]): string {

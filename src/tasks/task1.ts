@@ -1,13 +1,11 @@
 import { PlatformerDemo, type PlayOutcome } from "../engines/platformerDemo";
-import { render, renderToolbar, renderTaskListPanel, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
+import { render, renderTaskListPanel, renderResizeHandle, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
 import { state } from "../state";
 import { renderCodeTask } from "./task2";
 
 export function renderNumbersTask() {
   render(`
     <div class="editor-shell">
-      ${renderToolbar({ id: "toolbar-play", icon: "play", label: "Запустить" })}
-
       <div class="editor-main">
         <div class="hierarchy">
           ${renderTaskListPanel(1)}
@@ -24,6 +22,8 @@ export function renderNumbersTask() {
           </div>
           <button id="next-btn" class="secondary full next-btn" disabled>Дальше →</button>
         </div>
+
+        ${renderResizeHandle("left")}
 
         <div class="scene-col">
           <div class="scene-tabs">
@@ -46,6 +46,8 @@ export function renderNumbersTask() {
           </div>
           <div class="viewport-status" id="status">Готово к запуску.</div>
         </div>
+
+        ${renderResizeHandle("right")}
 
         <div class="inspector">
           <div class="inspector-header">
@@ -70,8 +72,6 @@ export function renderNumbersTask() {
           <button id="play-btn" class="primary full">▶ Play</button>
         </div>
       </div>
-
-      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
 
@@ -145,9 +145,7 @@ export function renderNumbersTask() {
     demo.tryJump();
   };
 
-  // Оба Play — и в тулбаре, и в инспекторе — запускают одно и то же действие.
   document.querySelector("#play-btn")?.addEventListener("click", runJump);
-  document.querySelector("#toolbar-play")?.addEventListener("click", runJump);
 
   // Пробел — та же команда, что и Play, чтобы не тянуться к кнопке каждый раз.
   const onKeyDown = (e: KeyboardEvent) => {

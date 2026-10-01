@@ -212,12 +212,25 @@ body:has(.editor-shell) {
 
 .editor-main { flex: 1; display: flex; min-height: 0; }
 
+.resize-handle {
+  width: 6px; flex: none;
+  background: #101011;
+  cursor: col-resize;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+.resize-handle:hover { background: #2a6fa8; }
+.resize-grip { display: flex; flex-direction: column; gap: 3px; pointer-events: none; }
+.resize-grip span { width: 3px; height: 3px; border-radius: 50%; background: #5a5a5c; }
+.resize-handle:hover .resize-grip span { background: #cfe8fb; }
+
 .hierarchy {
-  width: 240px; flex: none;
+  width: 360px; flex: none;
+  min-width: 260px; max-width: 520px;
   background: #252526;
-  border-right: 1px solid #101011;
-  padding: 14px 12px;
+  padding: 14px 16px;
   display: flex; flex-direction: column; gap: 2px;
+  overflow-y: auto;
 }
 .hierarchy-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 4px; font-size: 13px; color: #cfcfcf; }
 .hierarchy-item.selected { background: #2c5d87; color: #fff; }
@@ -250,10 +263,11 @@ body:has(.editor-shell) {
   line-height: 1.5;
 }
 
-.task-info { margin-top: 16px; padding-top: 16px; border-top: 1px solid #333; }
-.task-info .eyebrow { font-size: 11px; }
-.task-info h2 { font-size: 16px; margin: 0 0 8px; }
-.task-info .lead { font-size: 13px; line-height: 1.5; margin: 0; }
+.task-info { margin-top: 20px; padding-top: 20px; border-top: 1px solid #333; }
+.task-info .eyebrow { font-size: 13px; }
+.task-info h2 { font-size: 22px; margin: 0 0 12px; line-height: 1.3; }
+.task-info .lead { font-size: 15px; line-height: 1.6; margin: 0 0 10px; color: #c7c7c7; }
+.task-info .lead:last-child { margin-bottom: 0; }
 .hierarchy .next-btn { margin-top: auto; }
 
 .scene-col { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
@@ -309,8 +323,8 @@ body:has(.editor-shell) {
 
 .inspector {
   width: 300px; flex: none;
+  min-width: 240px; max-width: 460px;
   background: #252526;
-  border-left: 1px solid #101011;
   padding: 16px;
   display: flex; flex-direction: column; gap: 14px;
   overflow-y: auto;
@@ -535,6 +549,7 @@ body:has(.editor-shell) {
    отдаём место сцене и инспектору — это то, ради чего сюда пришли. */
 @media (max-width: 1100px) {
   .hierarchy { display: none; }
+  .resize-handle--left { display: none; }
   .toolbar-spacer { display: none; }
 }
 
@@ -542,6 +557,7 @@ body:has(.editor-shell) {
    складываем колонки в столбец. */
 @media (max-width: 760px) {
   .editor-main { flex-direction: column; }
+  .resize-handle--right { display: none; }
   .inspector { width: 100%; border-left: none; border-top: 1px solid #101011; }
   .viewport { min-height: 220px; }
   .task-banner { flex-direction: column; align-items: flex-start; }

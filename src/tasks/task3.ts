@@ -4,7 +4,7 @@ import {
   MOVE_CORRECT_ORDER,
   type MoveBlockId,
 } from "../engines/moveBlocks";
-import { render, renderToolbar, renderTaskListPanel, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
+import { render, renderTaskListPanel, renderResizeHandle, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
 import { renderReflection } from "./reflection";
 
 // Порядок в палитре — намеренно перемешан, чтобы не подсказывать решение расположением.
@@ -16,8 +16,6 @@ export function renderTask3() {
 
   render(`
     <div class="editor-shell">
-      ${renderToolbar({ id: "toolbar-play", icon: "play", label: "Запустить" })}
-
       <div class="editor-main">
         <div class="hierarchy">
           ${renderTaskListPanel(3)}
@@ -34,6 +32,8 @@ export function renderTask3() {
           </div>
           <button id="next-btn" class="secondary full next-btn" disabled>Дальше →</button>
         </div>
+
+        ${renderResizeHandle("left")}
 
         <div class="scene-col">
           <div class="scene-tabs">
@@ -57,6 +57,8 @@ export function renderTask3() {
           </div>
           <div class="viewport-status" id="viewport-status">Собери шаги и нажми Play.</div>
         </div>
+
+        ${renderResizeHandle("right")}
 
         <div class="inspector">
           <div class="inspector-header">
@@ -82,8 +84,6 @@ export function renderTask3() {
           <button id="run-btn" class="primary full">▶ Play</button>
         </div>
       </div>
-
-      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
 
@@ -93,7 +93,6 @@ export function renderTask3() {
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
-  const toolbarPlay = document.querySelector<HTMLButtonElement>("#toolbar-play")!;
   const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
   const cube = document.querySelector<HTMLDivElement>("#cube3")!;
 
@@ -301,7 +300,6 @@ export function renderTask3() {
   };
 
   runBtn.addEventListener("click", runSequence);
-  toolbarPlay.addEventListener("click", runSequence);
 
   renderSequence();
   nextBtn.addEventListener("click", () => {

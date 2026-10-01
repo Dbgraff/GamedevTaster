@@ -1,4 +1,4 @@
-import { render, renderToolbar, renderTaskListPanel, TASKS_BUILT } from "../ui/shell";
+import { render, renderTaskListPanel, renderResizeHandle, TASKS_BUILT } from "../ui/shell";
 import { state } from "../state";
 import { getFeedback } from "../feedback";
 import { renderIntro } from "./intro";
@@ -7,8 +7,6 @@ export function renderFeedback() {
   const feedback = getFeedback(state);
   render(`
     <div class="editor-shell">
-      ${renderToolbar({ id: "toolbar-restart", icon: "restart", label: "Пройти заново" })}
-
       <div class="task-banner">
         <div>
           <p class="eyebrow">Результат</p>
@@ -21,6 +19,8 @@ export function renderFeedback() {
         <div class="hierarchy">
           ${renderTaskListPanel(TASKS_BUILT + 1)}
         </div>
+
+        ${renderResizeHandle("left")}
 
         <div class="scene-col">
           <div class="scene-tabs">
@@ -41,6 +41,8 @@ export function renderFeedback() {
           <div class="viewport-status">Сессия завершена.</div>
         </div>
 
+        ${renderResizeHandle("right")}
+
         <div class="inspector">
           <div class="inspector-header">
             <p>Player</p>
@@ -53,16 +55,12 @@ export function renderFeedback() {
           </div>
         </div>
       </div>
-
-      <div class="status-bar"><span>Session complete</span><span>Console: 1 message</span></div>
     </div>
   `);
 
-  const restart = () => {
+  document.querySelector("#banner-restart")?.addEventListener("click", () => {
     state.numbersAttempts = 0;
     state.codeAttempts = 0;
     renderIntro();
-  };
-  document.querySelector("#toolbar-restart")?.addEventListener("click", restart);
-  document.querySelector("#banner-restart")?.addEventListener("click", restart);
+  });
 }

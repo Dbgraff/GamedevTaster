@@ -1,15 +1,15 @@
-import { render, renderToolbar, renderTaskListPanel } from "../ui/shell";
+import { render, renderTaskListPanel, renderResizeHandle } from "../ui/shell";
 import { renderNumbersTask } from "./task1";
 
 export function renderIntro() {
   render(`
     <div class="editor-shell">
-      ${renderToolbar({ id: "toolbar-play", icon: "play", label: "Начать" })}
-
       <div class="editor-main">
         <div class="hierarchy">
           ${renderTaskListPanel(1)}
         </div>
+
+        ${renderResizeHandle("left")}
 
         <div class="scene-col">
           <div class="scene-tabs">
@@ -31,6 +31,8 @@ export function renderIntro() {
           <div class="viewport-status">Готово к запуску.</div>
         </div>
 
+        ${renderResizeHandle("right")}
+
         <div class="inspector">
           <div class="inspector-header">
             <p>Player</p>
@@ -46,13 +48,10 @@ export function renderIntro() {
           <button id="inspector-start-btn" class="primary full">▶ Начать</button>
         </div>
       </div>
-
-      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
 
-  // Все три Play — тулбар, кнопка поверх сцены и в инспекторе — стартуют одно и то же.
-  document.querySelector("#toolbar-play")?.addEventListener("click", renderNumbersTask);
+  // Обе Play — кнопка поверх сцены и в инспекторе — стартуют одно и то же.
   document.querySelector("#hero-start-btn")?.addEventListener("click", renderNumbersTask);
   document.querySelector("#inspector-start-btn")?.addEventListener("click", renderNumbersTask);
 }

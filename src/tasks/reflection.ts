@@ -1,12 +1,10 @@
-import { render, renderToolbar, renderTaskListPanel, TASKS_BUILT } from "../ui/shell";
+import { render, renderTaskListPanel, renderResizeHandle, TASKS_BUILT } from "../ui/shell";
 import { state } from "../state";
 import { renderFeedback } from "./resultScreen";
 
 export function renderReflection() {
   render(`
     <div class="editor-shell">
-      ${renderToolbar()}
-
       <div class="task-banner">
         <div>
           <p class="eyebrow">Последний шаг</p>
@@ -19,6 +17,8 @@ export function renderReflection() {
         <div class="hierarchy">
           ${renderTaskListPanel(TASKS_BUILT + 1)}
         </div>
+
+        ${renderResizeHandle("left")}
 
         <div class="reflection-panel">
           <form id="reflection-form" class="reflection">
@@ -42,8 +42,6 @@ export function renderReflection() {
           </form>
         </div>
       </div>
-
-      <div class="status-bar"><span>Ready</span><span>Console: 0 errors</span></div>
     </div>
   `);
 
