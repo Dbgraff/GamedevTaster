@@ -45,7 +45,7 @@ export function renderIntro() {
             <div class="info-row"><span class="info-dot"></span>Персональный разбор в конце</div>
             <div class="info-row"><span class="info-dot"></span>🎮 В заданиях с этим значком можно порулить персонажем самому</div>
           </div>
-          <button id="inspector-start-btn" class="primary full">▶ Начать</button>
+          <button id="inspector-start-btn" class="primary full sticky-play">▶ Начать</button>
         </div>
       </div>
     </div>

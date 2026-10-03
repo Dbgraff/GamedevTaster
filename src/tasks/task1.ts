@@ -1,5 +1,14 @@
 import { PlatformerDemo, type PlayOutcome } from "../engines/platformerDemo";
-import { render, renderTaskListPanel, renderResizeHandle, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
+import {
+  render,
+  renderTaskListPanel,
+  renderResizeHandle,
+  renderHintBlock,
+  renderNextButton,
+  setupHints,
+  setupNextButtons,
+  TASK_TITLES,
+} from "../ui/shell";
 import { state } from "../state";
 import { renderCodeTask } from "./task2";
 
@@ -14,13 +23,13 @@ export function renderNumbersTask() {
             <p class="eyebrow">Задача 1 из ${TASK_TITLES.length}</p>
             <h2>Почини прыжок цифрами</h2>
             <p class="lead">Персонаж не прыгает как надо. Подбери параметры справа так, чтобы прыжок выглядел естественно.</p>
-            <p class="lead">🎮 Прыжок работает и на пробел — попробуй нажать и посмотреть, что будет.</p>
+            <p class="lead keyboard-hint">🎮 Прыжок работает и на пробел — попробуй нажать и посмотреть, что будет.</p>
             ${renderHintBlock([
               "Подумай: сможет ли персонаж вообще оторваться от земли, если сила прыжка почти нулевая?",
               "Подними Jump Force и опусти Gravity Scale, чтобы добиться заметной высоты — а потом подними Ground Check Distance, если персонаж проваливается под пол.",
             ])}
           </div>
-          <button id="next-btn" class="secondary full next-btn" disabled>Дальше →</button>
+          ${renderNextButton()}
         </div>
 
         ${renderResizeHandle("left")}
@@ -69,7 +78,8 @@ export function renderNumbersTask() {
               <input id="gc" type="number" min="0.02" max="0.30" step="0.01" value="0.03" />
             </div>
           </div>
-          <button id="play-btn" class="primary full">▶ Play</button>
+          <button id="play-btn" class="primary full sticky-play">▶ Play</button>
+          ${renderNextButton()}
         </div>
       </div>
     </div>
@@ -89,7 +99,6 @@ export function renderNumbersTask() {
   const gs = document.querySelector<HTMLInputElement>("#gs")!;
   const gc = document.querySelector<HTMLInputElement>("#gc")!;
   const status = document.querySelector<HTMLDivElement>("#status")!;
-  const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
   const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
   const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
@@ -126,6 +135,11 @@ export function renderNumbersTask() {
     "good-jump": () => "Похоже на нормальный прыжок! Можно идти дальше, либо ещё поэкспериментировать.",
   };
 
+  const next = setupNextButtons(() => {
+    window.removeEventListener("keydown", onKeyDown);
+    renderCodeTask();
+  });
+
   demo.onOutcome = (outcome, meta) => {
     state.numbersAttempts += 1;
     const text = messages[outcome](meta.dip);
@@ -137,7 +151,7 @@ export function renderNumbersTask() {
     consoleOutput.innerHTML = `<div><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${text}</span></div>`;
     openConsole();
 
-    if (ok) nextBtn.disabled = false;
+    if (ok) next.enable();
   };
 
   const runJump = () => {
@@ -148,6 +162,8 @@ export function renderNumbersTask() {
   document.querySelector("#play-btn")?.addEventListener("click", runJump);
 
   // Пробел — та же команда, что и Play, чтобы не тянуться к кнопке каждый раз.
+  // На мобильном физической клавиатуры обычно нет, так что это чисто
+  // десктопное удобство — на экране для него есть отдельная подсказка.
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.code === "Space") {
       e.preventDefault();
@@ -157,9 +173,5 @@ export function renderNumbersTask() {
   };
   window.addEventListener("keydown", onKeyDown);
 
-  nextBtn.addEventListener("click", () => {
-    window.removeEventListener("keydown", onKeyDown);
-    renderCodeTask();
-  });
   setupHints();
 }

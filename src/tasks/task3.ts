@@ -4,7 +4,16 @@ import {
   MOVE_CORRECT_ORDER,
   type MoveBlockId,
 } from "../engines/moveBlocks";
-import { render, renderTaskListPanel, renderResizeHandle, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
+import {
+  render,
+  renderTaskListPanel,
+  renderResizeHandle,
+  renderHintBlock,
+  renderNextButton,
+  setupHints,
+  setupNextButtons,
+  TASK_TITLES,
+} from "../ui/shell";
 import { renderReflection } from "./reflection";
 
 // Порядок в палитре — намеренно перемешан, чтобы не подсказывать решение расположением.
@@ -24,13 +33,13 @@ export function renderTask3() {
             <p class="eyebrow">Задача 3 из ${TASK_TITLES.length}</p>
             <h2>Кубик учится двигаться</h2>
             <p class="lead">Прыгать кубик уже умеет. Теперь научим его двигаться влево-вправо — собери шаги в правильном порядке и нажми Play.</p>
-            <p class="lead">🎮 Управление: стрелки или A/D — движение (заработает после Play), пробел — прыжок (работает сразу, независимо от сборки).</p>
+            <p class="lead keyboard-hint">🎮 Управление: стрелки или A/D — движение (заработает после Play), пробел — прыжок (работает сразу, независимо от сборки).</p>
             ${renderHintBlock([
               "Подумай: что должно случиться раньше — движок должен понять, что вообще нажал игрок, или сразу применить скорость?",
               "Порядок такой: сначала считать ввод, потом посчитать направление, потом умножить на скорость, потом применить — и только в конце физика двигает объект.",
             ])}
           </div>
-          <button id="next-btn" class="secondary full next-btn" disabled>Дальше →</button>
+          ${renderNextButton()}
         </div>
 
         ${renderResizeHandle("left")}
@@ -81,7 +90,8 @@ export function renderTask3() {
             <div id="sequence" class="sequence"></div>
             <button id="clear-btn" class="text-btn">Очистить сборку</button>
           </div>
-          <button id="run-btn" class="primary full">▶ Play</button>
+          <button id="run-btn" class="primary full sticky-play">▶ Play</button>
+          ${renderNextButton()}
         </div>
       </div>
     </div>
@@ -93,7 +103,6 @@ export function renderTask3() {
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
-  const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
   const cube = document.querySelector<HTMLDivElement>("#cube3")!;
 
   const openConsole = () => {
@@ -108,6 +117,13 @@ export function renderTask3() {
     btn.addEventListener("click", () => (btn.dataset.tab === "console" ? openConsole() : closeConsole()))
   );
   document.querySelector("#console-close")?.addEventListener("click", closeConsole);
+
+  const next = setupNextButtons(() => {
+    cancelAnimationFrame(controlLoopId);
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("keyup", onKeyUp);
+    renderReflection();
+  });
 
   function renderSequence() {
     if (sequence.length === 0) {
@@ -295,18 +311,12 @@ export function renderTask3() {
         : "Не двигается — попробуй стрелками, они честно повторят тот же результат.";
       viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
 
-      if (ok) nextBtn.disabled = false;
+      if (ok) next.enable();
     }, animationMs);
   };
 
   runBtn.addEventListener("click", runSequence);
 
   renderSequence();
-  nextBtn.addEventListener("click", () => {
-    cancelAnimationFrame(controlLoopId);
-    window.removeEventListener("keydown", onKeyDown);
-    window.removeEventListener("keyup", onKeyUp);
-    renderReflection();
-  });
   setupHints();
 }

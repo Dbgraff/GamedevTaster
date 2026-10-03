@@ -1,5 +1,14 @@
 import { BlockJumpSimulator, referencePeakHeight, type BlockId } from "../engines/jumpBlocks";
-import { render, renderTaskListPanel, renderResizeHandle, renderHintBlock, setupHints, TASK_TITLES } from "../ui/shell";
+import {
+  render,
+  renderTaskListPanel,
+  renderResizeHandle,
+  renderHintBlock,
+  renderNextButton,
+  setupHints,
+  setupNextButtons,
+  TASK_TITLES,
+} from "../ui/shell";
 import { state } from "../state";
 import { renderTask3 } from "./task3";
 
@@ -53,7 +62,7 @@ export function renderCodeTask() {
               "«Сбросить скорость по Y» должен стоять ПЕРЕД «Приложить силу вверх» — иначе новая сила просто сложится со старой скоростью.",
             ])}
           </div>
-          <button id="next-btn" class="secondary full next-btn" disabled>Дальше →</button>
+          ${renderNextButton()}
         </div>
 
         ${renderResizeHandle("left")}
@@ -107,7 +116,8 @@ export function renderCodeTask() {
             <div id="sequence" class="sequence"></div>
             <button id="clear-btn" class="text-btn">Очистить сборку</button>
           </div>
-          <button id="run-btn" class="primary full">▶ Play</button>
+          <button id="run-btn" class="primary full sticky-play">▶ Play</button>
+          ${renderNextButton()}
         </div>
       </div>
     </div>
@@ -123,7 +133,7 @@ export function renderCodeTask() {
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
-  const nextBtn = document.querySelector<HTMLButtonElement>("#next-btn")!;
+  const next = setupNextButtons(renderTask3);
 
   const openConsole = () => {
     consoleDrawer.classList.add("open");
@@ -265,7 +275,7 @@ export function renderCodeTask() {
       } else {
         verdict = "Оба прыжка одинаковой высоты, независимо от того, падал ли персонаж до этого — правильная последовательность!";
         ok = true;
-        nextBtn.disabled = false;
+        next.enable();
       }
     }
 
@@ -300,6 +310,5 @@ export function renderCodeTask() {
   runBtn.addEventListener("click", runSequence);
 
   renderSequence();
-  nextBtn.addEventListener("click", renderTask3);
   setupHints();
 }

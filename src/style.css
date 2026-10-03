@@ -545,21 +545,55 @@ body:has(.editor-shell) {
   border-radius: 6px 6px 0 0;
 }
 
-/* Ноутбуки поуже: убираем декоративную Hierarchy и правый отступ тулбара,
-   отдаём место сцене и инспектору — это то, ради чего сюда пришли. */
+/* Ноутбуки поуже: прячем список из 10 заданий (это навигация, не суть),
+   но описание ТЕКУЩЕГО задания — eyebrow/h2/lead/подсказки — остаётся
+   всегда, это основной контент, а не декорация. */
 @media (max-width: 1100px) {
-  .hierarchy { display: none; }
-  .resize-handle--left { display: none; }
+  .task-roadmap { display: none; }
   .toolbar-spacer { display: none; }
 }
 
-/* Совсем узкие экраны (планшет/телефон, если кто-то откроет с него) —
-   складываем колонки в столбец. */
+/* Мобильный: одна прокручиваемая страница вместо трёх колонок.
+   Порядок в разметке (Hierarchy → Scene → Inspector) и становится
+   порядком на экране: сначала задание, потом сцена, потом блоки/поля. */
 @media (max-width: 760px) {
-  .editor-main { flex-direction: column; }
-  .resize-handle--right { display: none; }
-  .inspector { width: 100%; border-left: none; border-top: 1px solid #101011; }
-  .viewport { min-height: 220px; }
+  .editor-shell { height: 100%; }
+  .editor-main { flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .resize-handle { display: none; }
+
+  .hierarchy, .scene-col, .inspector {
+    width: 100% !important;
+    max-width: none;
+    overflow: visible;
+    border: none;
+  }
+  .hierarchy { padding-bottom: 4px; }
+  .task-info { margin-top: 14px; padding-top: 14px; }
+
+  /* Вторая (десктопная) кнопка "Дальше" в левой панели на мобильном не нужна —
+     рабочая копия теперь едет рядом с Play, после того как до неё реально дошли. */
+  .hierarchy [data-next-btn] { display: none; }
+
+  /* Подсказки про клавиатуру бессмысленны без физической клавиатуры. */
+  .keyboard-hint { display: none; }
+
+  .scene-col { min-height: 280px; }
+  .viewport-stage { min-height: 260px; }
+
+  /* Play (и мобильная "Дальше" рядом с ней) приклеены к низу экрана —
+     .editor-main тут единый скролл-контейнер, поэтому sticky работает
+     относительно всего экрана, а не только Inspector. */
+  .sticky-play, .inspector [data-next-btn] {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.4);
+  }
+  .inspector [data-next-btn] { bottom: 58px; }
+
   .task-banner { flex-direction: column; align-items: flex-start; }
   .menu-group { display: none; }
+
+  .hero-card { padding: 24px 20px; }
+  .hero-card h1 { font-size: 22px; }
 }

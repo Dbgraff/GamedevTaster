@@ -57,18 +57,35 @@ const KEYBOARD_CONTROL_TASKS = new Set([1, 3]);
 
 export function renderTaskListPanel(currentIndex: number): string {
   return `
-    <p class="section-title" style="margin-bottom:12px">Задания</p>
-    ${TASK_TITLES.map((title, i) => {
-      const n = i + 1;
-      const done = n < currentIndex;
-      const current = n === currentIndex;
-      const locked = n > TASKS_BUILT;
-      const cls = current ? "hierarchy-item selected" : locked ? "hierarchy-item locked" : "hierarchy-item";
-      const marker = done ? "✓" : String(n);
-      const gamepad = KEYBOARD_CONTROL_TASKS.has(n) ? ` <span title="Можно управлять с клавиатуры">🎮</span>` : "";
-      return `<div class="${cls}"><span class="task-marker">${marker}</span>${title}${gamepad}</div>`;
-    }).join("")}
+    <div class="task-roadmap">
+      <p class="section-title" style="margin-bottom:12px">Задания</p>
+      ${TASK_TITLES.map((title, i) => {
+        const n = i + 1;
+        const done = n < currentIndex;
+        const current = n === currentIndex;
+        const locked = n > TASKS_BUILT;
+        const cls = current ? "hierarchy-item selected" : locked ? "hierarchy-item locked" : "hierarchy-item";
+        const marker = done ? "✓" : String(n);
+        const gamepad = KEYBOARD_CONTROL_TASKS.has(n) ? ` <span title="Можно управлять с клавиатуры">🎮</span>` : "";
+        return `<div class="${cls}"><span class="task-marker">${marker}</span>${title}${gamepad}</div>`;
+      }).join("")}
+    </div>
   `;
+}
+
+// ---------- Кнопка "Дальше" — на мобильном дублируется рядом с Play ----------
+// На узких экранах левая панель с описанием задания уходит наверх страницы,
+// а Play — вниз и приклеена к экрану. Если "Дальше" жила бы только в левой
+// панели, после решения задачи пришлось бы скроллить обратно наверх, чтобы
+// её найти. Поэтому рендерим две кнопки с одним data-атрибутом и держим
+// их disabled-состояние в синхроне.
+export function renderNextButton(label = "Дальше →"): string {
+  return `<button type="button" data-next-btn class="secondary full next-btn" disabled>${label}</button>`;
+}
+export function setupNextButtons(onClick: () => void) {
+  const buttons = document.querySelectorAll<HTMLButtonElement>("[data-next-btn]");
+  buttons.forEach((btn) => btn.addEventListener("click", onClick));
+  return { enable: () => buttons.forEach((btn) => (btn.disabled = false)) };
 }
 
 // ---------- Растягиваемые боковые панели (Hierarchy слева, Inspector справа) ----------
