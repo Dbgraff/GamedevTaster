@@ -2,6 +2,7 @@ import { BlockJumpSimulator, referencePeakHeight, type BlockId } from "../engine
 import {
   render,
   renderTaskListPanel,
+  renderMobileHeader,
   renderResizeHandle,
   renderHintBlock,
   renderNextButton,
@@ -9,6 +10,7 @@ import {
   setupNextButtons,
   TASK_TITLES,
 } from "../ui/shell";
+import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { state } from "../state";
 import { renderTask3 } from "./task3";
 
@@ -43,20 +45,23 @@ const BLOCK_DEFS: Record<BlockId, { label: string; code: string }> = {
   },
 };
 
-export function renderCodeTask() {
-  let sequence: BlockId[] = [];
-  let dragPayload: { source: "palette" | "sequence"; block: BlockId; index?: number } | null = null;
+const BLOCK_LABELS = Object.fromEntries(
+  (Object.keys(BLOCK_DEFS) as BlockId[]).map((id) => [id, BLOCK_DEFS[id].label])
+) as Record<BlockId, string>;
 
+export function renderCodeTask() {
   render(`
     <div class="editor-shell">
       <div class="editor-main">
+        ${renderMobileHeader(2)}
+
         <div class="hierarchy">
           ${renderTaskListPanel(2)}
 
           <div class="task-info">
             <p class="eyebrow">Задача 2 из ${TASK_TITLES.length}</p>
             <h2>Собери прыжок из блоков кода</h2>
-            <p class="lead">Перетащи блоки в область сборки в нужном порядке, затем жми Play. Проверим последовательность дважды: с ровного места и сразу после падения.</p>
+            <p class="lead"><span class="only-desktop">Перетащи блоки в область сборки (или просто кликни по ним)</span><span class="only-mobile">Нажимай на блоки — они встанут в сборку, порядок меняй стрелками ↑↓</span>. Затем жми Play — проверим сборку дважды: с ровного места и сразу после падения.</p>
             ${renderHintBlock([
               "Подумай, в каком порядке реально происходят вещи: сначала нужно избавиться от старой скорости, а уже потом добавлять новую.",
               "«Сбросить скорость по Y» должен стоять ПЕРЕД «Приложить силу вверх» — иначе новая сила просто сложится со старой скоростью.",
@@ -100,12 +105,7 @@ export function renderCodeTask() {
             <p class="section-title">Блоки</p>
             <div id="palette" class="palette">
               ${(Object.keys(BLOCK_DEFS) as BlockId[])
-                .map(
-                  (id) => `
-                <div class="block" draggable="true" data-block="${id}">
-                  ${BLOCK_DEFS[id].label}
-                </div>`
-                )
+                .map((id) => `<div class="block" draggable="true" data-block="${id}">${BLOCK_DEFS[id].label}</div>`)
                 .join("")}
             </div>
           </div>
@@ -116,8 +116,10 @@ export function renderCodeTask() {
             <div id="sequence" class="sequence"></div>
             <button id="clear-btn" class="text-btn">Очистить сборку</button>
           </div>
-          <button id="run-btn" class="primary full sticky-play">▶ Play</button>
-          ${renderNextButton()}
+          <div class="action-bar">
+            <button id="run-btn" class="primary full">▶ Play</button>
+            ${renderNextButton()}
+          </div>
         </div>
       </div>
     </div>
@@ -127,13 +129,17 @@ export function renderCodeTask() {
   const simulator = new BlockJumpSimulator(canvas);
   const resizeObserver = new ResizeObserver(() => simulator.resize());
   resizeObserver.observe(canvas);
-  const sequenceEl = document.querySelector<HTMLDivElement>("#sequence")!;
   const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
   const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const next = setupNextButtons(renderTask3);
+
+  const builder = setupSequenceBuilder<BlockId>({
+    labels: BLOCK_LABELS,
+    emptyText: `<span class="only-desktop">Перетащи сюда блоки из списка выше (или кликни по блоку)</span><span class="only-mobile">Нажимай на блоки выше — они встанут сюда по порядку</span>`,
+  });
 
   const openConsole = () => {
     consoleDrawer.classList.add("open");
@@ -148,76 +154,8 @@ export function renderCodeTask() {
   );
   document.querySelector("#console-close")?.addEventListener("click", closeConsole);
 
-  function renderSequence() {
-    if (sequence.length === 0) {
-      sequenceEl.innerHTML = `<p class="sequence-empty">Перетащи сюда блоки из списка выше</p>`;
-      return;
-    }
-    sequenceEl.innerHTML = sequence
-      .map(
-        (id, i) => `
-        <div class="block seq-block" draggable="true" data-index="${i}">
-          <span class="seq-num">${i + 1}</span>
-          <span>${BLOCK_DEFS[id].label}</span>
-          <button class="remove-btn" data-remove="${i}" type="button">×</button>
-        </div>`
-      )
-      .join("");
-
-    sequenceEl.querySelectorAll<HTMLDivElement>(".seq-block").forEach((el) => {
-      el.addEventListener("dragstart", () => {
-        const index = Number(el.dataset.index);
-        dragPayload = { source: "sequence", block: sequence[index], index };
-      });
-    });
-    sequenceEl.querySelectorAll<HTMLButtonElement>(".remove-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = Number(btn.dataset.remove);
-        sequence.splice(idx, 1);
-        renderSequence();
-      });
-    });
-  }
-
-  document.querySelectorAll<HTMLDivElement>("#palette .block").forEach((el) => {
-    el.addEventListener("dragstart", () => {
-      dragPayload = { source: "palette", block: el.dataset.block as BlockId };
-    });
-  });
-
-  sequenceEl.addEventListener("dragover", (e) => e.preventDefault());
-  sequenceEl.addEventListener("drop", (e) => {
-    e.preventDefault();
-    if (!dragPayload) return;
-
-    // определяем индекс вставки по позиции курсора относительно существующих блоков
-    const items = Array.from(sequenceEl.querySelectorAll<HTMLDivElement>(".seq-block"));
-    let insertAt = items.length;
-    for (let i = 0; i < items.length; i++) {
-      const rect = items[i].getBoundingClientRect();
-      if (e.clientY < rect.top + rect.height / 2) {
-        insertAt = i;
-        break;
-      }
-    }
-
-    if (dragPayload.source === "palette") {
-      sequence.splice(insertAt, 0, dragPayload.block);
-    } else if (dragPayload.index !== undefined) {
-      const [moved] = sequence.splice(dragPayload.index, 1);
-      const adjusted = dragPayload.index < insertAt ? insertAt - 1 : insertAt;
-      sequence.splice(adjusted, 0, moved);
-    }
-    dragPayload = null;
-    renderSequence();
-  });
-
-  document.querySelector("#clear-btn")?.addEventListener("click", () => {
-    sequence = [];
-    renderSequence();
-  });
-
   const runSequence = async () => {
+    const sequence = builder.get();
     if (sequence.length === 0) {
       viewportStatus.textContent = "Сначала собери хотя бы один блок.";
       viewportStatus.className = "viewport-status warn";
@@ -285,7 +223,10 @@ export function renderCodeTask() {
     viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
 
     const logLines = (label: string, lines: string[]) =>
-      lines.length ? `<div style="margin-top:8px"><span class="muted">// ${label}</span></div>` + lines.map((l) => `<div><span class="info">[i]</span> ${l}</div>`).join("") : "";
+      lines.length
+        ? `<div style="margin-top:8px"><span class="muted">// ${label}</span></div>` +
+          lines.map((l) => `<div><span class="info">[i]</span> ${l}</div>`).join("")
+        : "";
 
     consoleOutput.innerHTML = `
       <div><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
@@ -308,7 +249,5 @@ export function renderCodeTask() {
   };
 
   runBtn.addEventListener("click", runSequence);
-
-  renderSequence();
   setupHints();
 }

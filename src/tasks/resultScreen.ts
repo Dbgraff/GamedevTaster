@@ -22,7 +22,7 @@ export function renderFeedback() {
 
         ${renderResizeHandle("left")}
 
-        <div class="scene-col">
+        <div class="scene-col scene-col--static">
           <div class="scene-tabs">
             <button type="button" class="tab-btn">Scene</button>
             <button type="button" class="tab-btn">Game</button>

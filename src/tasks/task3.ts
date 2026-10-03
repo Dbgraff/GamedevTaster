@@ -7,6 +7,7 @@ import {
 import {
   render,
   renderTaskListPanel,
+  renderMobileHeader,
   renderResizeHandle,
   renderHintBlock,
   renderNextButton,
@@ -14,18 +15,18 @@ import {
   setupNextButtons,
   TASK_TITLES,
 } from "../ui/shell";
+import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { renderReflection } from "./reflection";
 
 // Порядок в палитре — намеренно перемешан, чтобы не подсказывать решение расположением.
 const PALETTE_ORDER: MoveBlockId[] = ["physics", "multiply", "input", "assign", "direction"];
 
 export function renderTask3() {
-  let sequence: MoveBlockId[] = [];
-  let dragPayload: { source: "palette" | "sequence"; block: MoveBlockId; index?: number } | null = null;
-
   render(`
     <div class="editor-shell">
       <div class="editor-main">
+        ${renderMobileHeader(3)}
+
         <div class="hierarchy">
           ${renderTaskListPanel(3)}
 
@@ -78,10 +79,7 @@ export function renderTask3() {
             <p class="section-title">Шаги</p>
             <div id="palette" class="palette">
               ${PALETTE_ORDER.map(
-                (id) => `
-                <div class="block" draggable="true" data-block="${id}">
-                  ${MOVE_BLOCK_LABELS[id]}
-                </div>`
+                (id) => `<div class="block" draggable="true" data-block="${id}">${MOVE_BLOCK_LABELS[id]}</div>`
               ).join("")}
             </div>
           </div>
@@ -90,20 +88,26 @@ export function renderTask3() {
             <div id="sequence" class="sequence"></div>
             <button id="clear-btn" class="text-btn">Очистить сборку</button>
           </div>
-          <button id="run-btn" class="primary full sticky-play">▶ Play</button>
-          ${renderNextButton()}
+          <div class="action-bar">
+            <button id="run-btn" class="primary full">▶ Play</button>
+            ${renderNextButton()}
+          </div>
         </div>
       </div>
     </div>
   `);
 
-  const sequenceEl = document.querySelector<HTMLDivElement>("#sequence")!;
   const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
   const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
   const cube = document.querySelector<HTMLDivElement>("#cube3")!;
+
+  const builder = setupSequenceBuilder<MoveBlockId>({
+    labels: MOVE_BLOCK_LABELS,
+    emptyText: `<span class="only-desktop">Перетащи сюда шаги из списка выше (или кликни по шагу)</span><span class="only-mobile">Нажимай на шаги выше — они встанут сюда по порядку</span>`,
+  });
 
   const openConsole = () => {
     consoleDrawer.classList.add("open");
@@ -118,82 +122,7 @@ export function renderTask3() {
   );
   document.querySelector("#console-close")?.addEventListener("click", closeConsole);
 
-  const next = setupNextButtons(() => {
-    cancelAnimationFrame(controlLoopId);
-    window.removeEventListener("keydown", onKeyDown);
-    window.removeEventListener("keyup", onKeyUp);
-    renderReflection();
-  });
-
-  function renderSequence() {
-    if (sequence.length === 0) {
-      sequenceEl.innerHTML = `<p class="sequence-empty">Перетащи сюда шаги из списка выше</p>`;
-      return;
-    }
-    sequenceEl.innerHTML = sequence
-      .map(
-        (id, i) => `
-        <div class="block seq-block" draggable="true" data-index="${i}">
-          <span class="seq-num">${i + 1}</span>
-          <span>${MOVE_BLOCK_LABELS[id]}</span>
-          <button class="remove-btn" data-remove="${i}" type="button">×</button>
-        </div>`
-      )
-      .join("");
-
-    sequenceEl.querySelectorAll<HTMLDivElement>(".seq-block").forEach((el) => {
-      el.addEventListener("dragstart", () => {
-        const index = Number(el.dataset.index);
-        dragPayload = { source: "sequence", block: sequence[index], index };
-      });
-    });
-    sequenceEl.querySelectorAll<HTMLButtonElement>(".remove-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = Number(btn.dataset.remove);
-        sequence.splice(idx, 1);
-        renderSequence();
-      });
-    });
-  }
-
-  document.querySelectorAll<HTMLDivElement>("#palette .block").forEach((el) => {
-    el.addEventListener("dragstart", () => {
-      dragPayload = { source: "palette", block: el.dataset.block as MoveBlockId };
-    });
-  });
-
-  sequenceEl.addEventListener("dragover", (e) => e.preventDefault());
-  sequenceEl.addEventListener("drop", (e) => {
-    e.preventDefault();
-    if (!dragPayload) return;
-
-    const items = Array.from(sequenceEl.querySelectorAll<HTMLDivElement>(".seq-block"));
-    let insertAt = items.length;
-    for (let i = 0; i < items.length; i++) {
-      const rect = items[i].getBoundingClientRect();
-      if (e.clientY < rect.top + rect.height / 2) {
-        insertAt = i;
-        break;
-      }
-    }
-
-    if (dragPayload.source === "palette") {
-      sequence.splice(insertAt, 0, dragPayload.block);
-    } else if (dragPayload.index !== undefined) {
-      const [moved] = sequence.splice(dragPayload.index, 1);
-      const adjusted = dragPayload.index < insertAt ? insertAt - 1 : insertAt;
-      sequence.splice(adjusted, 0, moved);
-    }
-    dragPayload = null;
-    renderSequence();
-  });
-
-  document.querySelector("#clear-btn")?.addEventListener("click", () => {
-    sequence = [];
-    renderSequence();
-  });
-
-  // ---------- Ручное управление ----------
+  // ---------- Ручное управление (только с физической клавиатуры) ----------
   // Прыжок работает всегда, независимо от сборки — кубик "уже умеет" это с задачи 1.
   // Движение разблокируется только после первого Play и честно воспроизводит баг:
   // если сборка не работает, стрелки просто не двигают кубик — как в автопрогоне.
@@ -205,7 +134,7 @@ export function renderTask3() {
   let isJumping = false;
   const JUMP_MS = 500; // должно совпадать с длительностью .deco-player.jumping в CSS
 
-  // Определяем A/D по физическому коду клавиши (KeyA/KeyD), а не по e.key —
+  // A/D определяем по физическому коду клавиши (KeyA/KeyD), а не по e.key —
   // иначе при включённой русской раскладке (ф/в вместо a/d) движение не сработает.
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.code === "Space") {
@@ -235,12 +164,10 @@ export function renderTask3() {
   const controlLoop = (time: number) => {
     const dt = Math.min((time - lastControlTime) / 1000, 0.05);
     lastControlTime = time;
-    if (controlsUnlocked && !animating) {
+    if (controlsUnlocked && !animating && heldKeys.size > 0) {
       // Пересчитываем прямо здесь и сейчас — если игрок поменял блоки местами,
       // это сразу отражается на том, реагирует кубик на стрелки или нет.
-      const live = simulateMoveSequence(sequence);
-      const worksNow = live.velocityAtPhysics !== 0;
-
+      const worksNow = simulateMoveSequence(builder.get()).velocityAtPhysics !== 0;
       if (worksNow) {
         const speed = 45; // %/сек
         if (heldKeys.has("left")) posX -= speed * dt;
@@ -248,13 +175,20 @@ export function renderTask3() {
         posX = Math.max(6, Math.min(94, posX));
         cube.style.left = `${posX}%`;
       }
-      // Если сборка не работает — кубик просто не реагирует, что бы ни зажималось.
     }
     controlLoopId = requestAnimationFrame(controlLoop);
   };
   let controlLoopId = requestAnimationFrame(controlLoop);
 
+  const next = setupNextButtons(() => {
+    cancelAnimationFrame(controlLoopId);
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("keyup", onKeyUp);
+    renderReflection();
+  });
+
   const runSequence = () => {
+    const sequence = builder.get();
     const hasAll = MOVE_CORRECT_ORDER.every((id) => sequence.includes(id));
     if (!hasAll) {
       viewportStatus.textContent = "В сборке не хватает шагов — тут нужны все пять, ни один не лишний.";
@@ -299,16 +233,14 @@ export function renderTask3() {
     window.setTimeout(() => {
       animating = false;
       cube.classList.remove("moving", "stuck");
-
       controlsUnlocked = true;
-
       openConsole();
 
-      viewportStatus.textContent = ok
-        ? "Готово — порядок верный. Можешь ещё погонять кубик стрелками или жать «Дальше»."
+      viewportStatus.innerHTML = ok
+        ? `Готово — порядок верный.<span class="only-desktop">&nbsp;Можешь ещё погонять кубик стрелками.</span>`
         : moved
-        ? "Двигается, но не так, как задумано — попробуй стрелками, баг проявится и вручную."
-        : "Не двигается — попробуй стрелками, они честно повторят тот же результат.";
+        ? `Двигается, но не так, как задумано.<span class="only-desktop">&nbsp;Попробуй стрелками — баг проявится и вручную.</span>`
+        : `Не двигается — открой разбор в Console.<span class="only-desktop">&nbsp;Стрелки честно повторят тот же результат.</span>`;
       viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
 
       if (ok) next.enable();
@@ -316,7 +248,5 @@ export function renderTask3() {
   };
 
   runBtn.addEventListener("click", runSequence);
-
-  renderSequence();
   setupHints();
 }

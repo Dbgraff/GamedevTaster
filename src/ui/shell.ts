@@ -73,6 +73,28 @@ export function renderTaskListPanel(currentIndex: number): string {
   `;
 }
 
+// ---------- Мобильная шапка (из макета №3): "Задача N из 10" + ☰ ----------
+// На десктопе скрыта через CSS. ☰ раскрывает список заданий, который на узких
+// экранах по умолчанию спрятан, чтобы не отодвигать само задание вниз.
+export function renderMobileHeader(currentIndex: number): string {
+  return `
+    <div class="mobile-header">
+      <span class="mobile-header-title">Задача ${currentIndex} из ${TASK_TITLES.length}</span>
+      <button type="button" class="mobile-header-menu" data-roadmap-toggle aria-label="Список заданий" aria-expanded="false">☰</button>
+    </div>
+  `;
+}
+
+// Один делегированный слушатель на весь документ — переживает любые перерисовки экранов.
+document.addEventListener("click", (e) => {
+  const toggle = (e.target as HTMLElement).closest<HTMLElement>("[data-roadmap-toggle]");
+  if (!toggle) return;
+  const shell = toggle.closest<HTMLElement>(".editor-shell");
+  const open = shell?.classList.toggle("roadmap-open") ?? false;
+  toggle.setAttribute("aria-expanded", String(open));
+  toggle.textContent = open ? "✕" : "☰";
+});
+
 // ---------- Кнопка "Дальше" — на мобильном дублируется рядом с Play ----------
 // На узких экранах левая панель с описанием задания уходит наверх страницы,
 // а Play — вниз и приклеена к экрану. Если "Дальше" жила бы только в левой

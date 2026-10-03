@@ -2,6 +2,7 @@ import { PlatformerDemo, type PlayOutcome } from "../engines/platformerDemo";
 import {
   render,
   renderTaskListPanel,
+  renderMobileHeader,
   renderResizeHandle,
   renderHintBlock,
   renderNextButton,
@@ -16,13 +17,15 @@ export function renderNumbersTask() {
   render(`
     <div class="editor-shell">
       <div class="editor-main">
+        ${renderMobileHeader(1)}
+
         <div class="hierarchy">
           ${renderTaskListPanel(1)}
 
           <div class="task-info">
             <p class="eyebrow">Задача 1 из ${TASK_TITLES.length}</p>
             <h2>Почини прыжок цифрами</h2>
-            <p class="lead">Персонаж не прыгает как надо. Подбери параметры справа так, чтобы прыжок выглядел естественно.</p>
+            <p class="lead">Персонаж не прыгает как надо. Подбери параметры <span class="only-desktop">справа</span><span class="only-mobile">ниже</span> так, чтобы прыжок выглядел естественно.</p>
             <p class="lead keyboard-hint">🎮 Прыжок работает и на пробел — попробуй нажать и посмотреть, что будет.</p>
             ${renderHintBlock([
               "Подумай: сможет ли персонаж вообще оторваться от земли, если сила прыжка почти нулевая?",
@@ -67,19 +70,21 @@ export function renderNumbersTask() {
             <p class="section-title">PlayerController (Script)</p>
             <div class="field-row">
               <label for="jf">Jump Force</label>
-              <input id="jf" type="number" min="0" max="15" step="1" value="2" />
+              <input id="jf" type="number" inputmode="numeric" min="0" max="15" step="1" value="2" />
             </div>
             <div class="field-row">
               <label for="gs">Gravity Scale</label>
-              <input id="gs" type="number" min="1" max="30" step="1" value="26" />
+              <input id="gs" type="number" inputmode="numeric" min="1" max="30" step="1" value="26" />
             </div>
             <div class="field-row">
               <label for="gc">Ground Check Distance</label>
-              <input id="gc" type="number" min="0.02" max="0.30" step="0.01" value="0.03" />
+              <input id="gc" type="number" inputmode="decimal" min="0.02" max="0.30" step="0.01" value="0.03" />
             </div>
           </div>
-          <button id="play-btn" class="primary full sticky-play">▶ Play</button>
-          ${renderNextButton()}
+          <div class="action-bar">
+            <button id="play-btn" class="primary full">▶ Play</button>
+            ${renderNextButton()}
+          </div>
         </div>
       </div>
     </div>
@@ -116,11 +121,17 @@ export function renderNumbersTask() {
   );
   document.querySelector("#console-close")?.addEventListener("click", closeConsole);
 
+  // valueAsNumber — основной путь; запасной разбор с заменой запятой нужен
+  // для iPhone с русской клавиатурой, где в десятичное поле вводится "0,05".
+  const readNum = (el: HTMLInputElement, fallback: number) => {
+    const v = Number.isFinite(el.valueAsNumber) ? el.valueAsNumber : parseFloat(el.value.replace(",", "."));
+    return Number.isFinite(v) && v !== 0 ? v : fallback;
+  };
   const syncParams = () => {
     demo.setParams({
-      jumpForce: Number(jf.value) || 0,
-      gravityScale: Number(gs.value) || 1,
-      groundCheckDistance: Number(gc.value) || 0.02,
+      jumpForce: readNum(jf, 0),
+      gravityScale: readNum(gs, 1),
+      groundCheckDistance: readNum(gc, 0.02),
     });
   };
   [jf, gs, gc].forEach((el) => el.addEventListener("input", syncParams));

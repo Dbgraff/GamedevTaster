@@ -11,7 +11,7 @@ export function renderIntro() {
 
         ${renderResizeHandle("left")}
 
-        <div class="scene-col">
+        <div class="scene-col scene-col--static">
           <div class="scene-tabs">
             <button type="button" class="tab-btn active">Scene</button>
             <button type="button" class="tab-btn">Game</button>
@@ -24,7 +24,7 @@ export function renderIntro() {
                 <p class="eyebrow">Попробуй профессию · 20 минут</p>
                 <h1>Почему персонаж не прыгает?</h1>
                 <p class="lead">Сейчас ты на 20 минут станешь программистом в геймдеве. Никакой теории — сразу разберёмся с живой проблемой, с которой сталкивается почти каждый разработчик игр.</p>
-                <button id="hero-start-btn" class="primary">▶ Начать</button>
+                <button id="hero-start-btn" class="primary only-desktop">▶ Начать</button>
               </div>
             </div>
           </div>
@@ -40,12 +40,14 @@ export function renderIntro() {
           </div>
           <div class="section-card">
             <p class="section-title">О пробе</p>
-            <div class="info-row"><span class="info-dot"></span>2 коротких задачи</div>
+            <div class="info-row"><span class="info-dot"></span>Короткие задания — по 2–5 минут каждое</div>
             <div class="info-row"><span class="info-dot"></span>~20 минут целиком</div>
             <div class="info-row"><span class="info-dot"></span>Персональный разбор в конце</div>
-            <div class="info-row"><span class="info-dot"></span>🎮 В заданиях с этим значком можно порулить персонажем самому</div>
+            <div class="info-row keyboard-hint"><span class="info-dot"></span>🎮 В заданиях с этим значком можно порулить персонажем самому</div>
           </div>
-          <button id="inspector-start-btn" class="primary full sticky-play">▶ Начать</button>
+          <div class="action-bar">
+            <button id="inspector-start-btn" class="primary full">▶ Начать</button>
+          </div>
         </div>
       </div>
     </div>
