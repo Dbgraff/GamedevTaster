@@ -17,7 +17,8 @@ import {
 } from "../ui/shell";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { renderConsoleDrawer, setupConsole } from "../ui/console";
-import { renderReflection } from "./reflection";
+import { registerAttempt } from "../state";
+import { renderTask4 } from "./task4";
 
 // Порядок в палитре — намеренно перемешан, чтобы не подсказывать решение расположением.
 const PALETTE_ORDER: MoveBlockId[] = ["physics", "multiply", "input", "assign", "direction"];
@@ -163,7 +164,7 @@ export function renderTask3() {
     cancelAnimationFrame(controlLoopId);
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);
-    renderReflection();
+    renderTask4();
   });
 
   const runSequence = () => {
@@ -226,6 +227,7 @@ export function renderTask3() {
         : `Не двигается — открой разбор в Console.<span class="only-desktop">&nbsp;Стрелки честно повторят тот же результат.</span>`;
       viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
 
+      registerAttempt(3, ok);
       if (ok) next.enable();
     }, animationMs);
   };

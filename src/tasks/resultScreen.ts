@@ -1,10 +1,26 @@
-import { render, renderTaskListPanel, renderResizeHandle, TASKS_BUILT } from "../ui/shell";
-import { state } from "../state";
+import { render, renderTaskListPanel, renderResizeHandle, TASKS_BUILT, TASK_TITLES } from "../ui/shell";
+import { state, progress, resetSession } from "../state";
 import { getFeedback } from "../feedback";
 import { renderNumbersTask } from "./task1";
+import { getTaskRenderer, HARD_TASKS_FROM } from "./registry";
+
+// "с 1-й попытки", "со 2-й попытки" — по-русски порядковые с "с/со"
+const ordinal = (n: number) => `${n === 2 ? "со" : "с"} ${n}-й попытки`;
 
 export function renderFeedback() {
   const feedback = getFeedback(state);
+  // Если человек на развилке выбрал опросник, к сложным заданиям можно вернуться отсюда
+  const hardTask = getTaskRenderer(HARD_TASKS_FROM);
+  const canContinue = Boolean(hardTask) && progress.solvedOn[HARD_TASKS_FROM] === undefined;
+  const taskLines = TASK_TITLES.slice(0, TASKS_BUILT)
+    .map((title, i) => {
+      const n = i + 1;
+      const solved = progress.solvedOn[n];
+      return `<div><span class="${solved ? "info" : "warn"}">[${solved ? "i" : "!"}]</span> Задача ${n} «${title}»: ${
+        solved ? `решена ${ordinal(solved)}` : "не решена"
+      }</div>`;
+    })
+    .join("");
   render(`
     <div class="editor-shell">
       <div class="task-banner">
@@ -31,8 +47,7 @@ export function renderFeedback() {
           <div class="deco-scene" style="background-image:none;">
             <div class="console">
               <div><span class="muted">&gt;</span> Анализирую сессию…</div>
-              <div><span class="info">[i]</span> Задача 1: ${state.numbersAttempts} попыт${state.numbersAttempts === 1 ? "ка" : "ки"}, последняя — успешная</div>
-              <div><span class="info">[i]</span> Задача 2: ${state.codeAttempts === 0 ? "правильная последовательность блоков с первой попытки" : `${state.codeAttempts} неверн${state.codeAttempts === 1 ? "ая попытка" : "ые попытки"} перед успехом`}</div>
+              ${taskLines}
               <div><span class="ok">[✓]</span> Профиль собран</div>
               <div style="margin-top:14px"><span class="muted">&gt;</span> Печатаю рекомендацию…</div>
               <span class="final">${feedback}</span>
@@ -50,6 +65,7 @@ export function renderFeedback() {
           </div>
           <div class="section-card">
             <p class="section-title">Что дальше</p>
+            ${canContinue ? `<button type="button" id="continue-hard" class="primary button-link">Продолжить: сложные задания →</button>` : ""}
             <a class="primary button-link" href="#">Полноценный мини-курс →</a>
             <a class="secondary button-link" href="#">Другая профессия (арт/дизайн) →</a>
           </div>
@@ -58,9 +74,9 @@ export function renderFeedback() {
     </div>
   `);
 
+  document.querySelector("#continue-hard")?.addEventListener("click", () => hardTask?.());
   document.querySelector("#banner-restart")?.addEventListener("click", () => {
-    state.numbersAttempts = 0;
-    state.codeAttempts = 0;
+    resetSession();
     renderNumbersTask({ withIntro: true });
   });
 }

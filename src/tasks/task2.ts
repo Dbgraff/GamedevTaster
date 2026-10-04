@@ -12,7 +12,7 @@ import {
 } from "../ui/shell";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { renderConsoleDrawer, setupConsole } from "../ui/console";
-import { state } from "../state";
+import { state, registerAttempt } from "../state";
 import { renderTask3 } from "./task3";
 
 const BLOCK_DEFS: Record<BlockId, { label: string; code: string }> = {
@@ -196,6 +196,7 @@ export function renderCodeTask() {
     }
 
     if (!ok) state.codeAttempts += 1;
+    registerAttempt(2, ok);
 
     viewportStatus.textContent = ok
       ? "Готово — последовательность стабильна. Разбор — во вкладке Console."

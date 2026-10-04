@@ -51,7 +51,7 @@ export const TASK_TITLES = [
   "Game Over",
   "Финальный баг",
 ];
-export const TASKS_BUILT = 3; // сколько заданий пока реально реализовано
+export const TASKS_BUILT = 7; // сколько заданий пока реально реализовано
 // Задания, где после проверки можно ещё и самому порулить персонажем с клавиатуры.
 const KEYBOARD_CONTROL_TASKS = new Set([1, 3]);
 
@@ -81,13 +81,34 @@ export function isModalOpen(): boolean {
   return document.querySelector(".modal-backdrop") !== null;
 }
 
-export function showIntroModal(onClose?: () => void) {
-  if (isModalOpen()) return;
-
+// Общий механизм модалок: приветствие, развилка после задания 7 и будущие.
+// Esc закрывает окно; фокус ставится на элемент с data-autofocus, чтобы
+// Enter/пробел нажимали кнопку, а не уходили в сцену под окном.
+export function openModal(innerHtml: string, opts: { labelledBy?: string; onClose?: () => void } = {}) {
+  if (isModalOpen()) return null;
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
-  backdrop.innerHTML = `
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
+  backdrop.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true"${
+    opts.labelledBy ? ` aria-labelledby="${opts.labelledBy}"` : ""
+  }>${innerHtml}</div>`;
+
+  const close = () => {
+    window.removeEventListener("keydown", onKey);
+    backdrop.remove();
+    opts.onClose?.();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") close();
+  };
+  window.addEventListener("keydown", onKey);
+  document.body.appendChild(backdrop);
+  backdrop.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+  return { backdrop, close };
+}
+
+export function showIntroModal(onClose?: () => void) {
+  const modal = openModal(
+    `
       <p class="eyebrow">Попробуй профессию · программист в геймдеве</p>
       <h1 id="intro-modal-title">Сейчас ты побудешь геймплей-программистом</h1>
       <p class="lead">
@@ -102,24 +123,11 @@ export function showIntroModal(onClose?: () => void) {
         <li><span class="info-dot"></span>В конце — короткий разбор: что тебе зашло больше</li>
         <li class="keyboard-hint"><span class="info-dot"></span>🎮 В заданиях с этим значком можно управлять кубиком с клавиатуры</li>
       </ul>
-      <button type="button" class="primary" data-modal-close>▶ Начать</button>
-    </div>
-  `;
-
-  const close = () => {
-    window.removeEventListener("keydown", onKey);
-    backdrop.remove();
-    onClose?.();
-  };
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === "Escape") close();
-  };
-
-  backdrop.querySelector("[data-modal-close]")!.addEventListener("click", close);
-  window.addEventListener("keydown", onKey);
-  document.body.appendChild(backdrop);
-  // Фокус на кнопке — чтобы Enter/пробел закрывали окно, а не уходили в сцену
-  backdrop.querySelector<HTMLButtonElement>("[data-modal-close]")!.focus();
+      <button type="button" class="primary" data-modal-close data-autofocus>▶ Начать</button>
+    `,
+    { labelledBy: "intro-modal-title", onClose }
+  );
+  modal?.backdrop.querySelector("[data-modal-close]")!.addEventListener("click", modal.close);
 }
 
 // ---------- Мобильная шапка (из макета №3): "Задача N из 10" + ☰ ----------
