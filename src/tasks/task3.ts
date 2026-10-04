@@ -16,6 +16,7 @@ import {
   TASK_TITLES,
 } from "../ui/shell";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
+import { renderConsoleDrawer, setupConsole } from "../ui/console";
 import { renderReflection } from "./reflection";
 
 // Порядок в палитре — намеренно перемешан, чтобы не подсказывать решение расположением.
@@ -55,15 +56,7 @@ export function renderTask3() {
               <div class="deco-ground"></div>
               <div class="deco-player" id="cube3"></div>
             </div>
-            <div class="console-drawer" id="console-drawer">
-              <div class="console-drawer-header">
-                <span>Console</span>
-                <button type="button" id="console-close" class="console-drawer-close" aria-label="Закрыть">✕</button>
-              </div>
-              <div class="console" id="console-output">
-                <span class="muted">&gt; Нажми Play, чтобы увидеть разбор здесь.</span>
-              </div>
-            </div>
+            ${renderConsoleDrawer()}
           </div>
           <div class="viewport-status" id="viewport-status">Собери шаги и нажми Play.</div>
         </div>
@@ -97,9 +90,6 @@ export function renderTask3() {
     </div>
   `);
 
-  const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
-  const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
-  const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
   const cube = document.querySelector<HTMLDivElement>("#cube3")!;
@@ -109,18 +99,7 @@ export function renderTask3() {
     emptyText: `<span class="only-desktop">Перетащи сюда шаги из списка выше (или кликни по шагу)</span><span class="only-mobile">Нажимай на шаги выше — они встанут сюда по порядку</span>`,
   });
 
-  const openConsole = () => {
-    consoleDrawer.classList.add("open");
-    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "console"));
-  };
-  const closeConsole = () => {
-    consoleDrawer.classList.remove("open");
-    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "scene"));
-  };
-  tabButtons.forEach((btn) =>
-    btn.addEventListener("click", () => (btn.dataset.tab === "console" ? openConsole() : closeConsole()))
-  );
-  document.querySelector("#console-close")?.addEventListener("click", closeConsole);
+  const consoleUi = setupConsole();
 
   // ---------- Ручное управление (только с физической клавиатуры) ----------
   // Прыжок работает всегда, независимо от сборки — кубик "уже умеет" это с задачи 1.
@@ -196,7 +175,7 @@ export function renderTask3() {
       return;
     }
 
-    closeConsole();
+    consoleUi.close(); // чтобы было видно, что сделает кубик
 
     // Настоящий пошаговый прогон, а не сверка с эталонным массивом — интерпретатор
     // сам вычисляет, что реально произойдёт при таком порядке шагов.
@@ -216,25 +195,29 @@ export function renderTask3() {
     if (!result.ranPhysics) {
       verdict = "Физика так и не применилась — без неё кубик никогда не сдвинется, что бы ни было посчитано до этого.";
     } else if (!moved) {
-      verdict = "Кубик не сдвинулся — velocity в момент, когда физика её прочитала, оказался нулевым. Ниже — что реально выполнилось по шагам.";
+      verdict = "Кубик не сдвинулся — velocity в момент, когда физика её прочитала, оказался нулевым.";
     } else if (ok) {
       verdict = "Точно! Обрати внимание: то же самое разбиение на шаги — считать ввод, посчитать значение, применить к объекту — повторяется почти в любой механике движка, не только в прыжке.";
     } else {
       verdict = "Кубик сдвинулся, но порядок всё равно не тот эталонный — в реальном коде так тоже бывает: вроде работает, а на деле собрано не так, как задумано.";
     }
 
-    consoleOutput.innerHTML = `
-      <div><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
-      <div style="margin-top:10px"><span class="muted">// что реально выполнилось по шагам</span></div>
-      ${result.log.map((line) => `<div><span class="info">[i]</span> ${line}</div>`).join("")}
-    `;
+    const entry = {
+      ok,
+      text: verdict,
+      meta: `шагов в сборке: ${sequence.length}`,
+      details: `
+        <div style="margin-top:10px"><span class="muted">// что реально выполнилось по шагам</span></div>
+        ${result.log.map((line) => `<div><span class="info">[i]</span> ${line}</div>`).join("")}
+      `,
+    };
 
     const animationMs = moved ? 1800 : 400;
     window.setTimeout(() => {
       animating = false;
       cube.classList.remove("moving", "stuck");
       controlsUnlocked = true;
-      openConsole();
+      consoleUi.push(entry);
 
       viewportStatus.innerHTML = ok
         ? `Готово — порядок верный.<span class="only-desktop">&nbsp;Можешь ещё погонять кубик стрелками.</span>`

@@ -12,6 +12,7 @@ import {
   isModalOpen,
   TASK_TITLES,
 } from "../ui/shell";
+import { renderConsoleDrawer, setupConsole } from "../ui/console";
 import { state } from "../state";
 import { renderCodeTask } from "./task2";
 
@@ -50,15 +51,7 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
             <div class="viewport" id="scene-view">
               <canvas id="canvas"></canvas>
             </div>
-            <div class="console-drawer" id="console-drawer">
-              <div class="console-drawer-header">
-                <span>Console</span>
-                <button type="button" id="console-close" class="console-drawer-close" aria-label="Закрыть">✕</button>
-              </div>
-              <div class="console" id="console-output">
-                <span class="muted">&gt; Здесь будут результаты твоих попыток.</span>
-              </div>
-            </div>
+            ${renderConsoleDrawer()}
           </div>
           <div class="viewport-status" id="status">Готово к запуску.</div>
         </div>
@@ -108,25 +101,7 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
   const gs = document.querySelector<HTMLInputElement>("#gs")!;
   const gc = document.querySelector<HTMLInputElement>("#gc")!;
   const status = document.querySelector<HTMLDivElement>("#status")!;
-  const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
-  const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
-  const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
-
-  const consoleTab = document.querySelector<HTMLButtonElement>('.scene-tabs .tab-btn[data-tab="console"]')!;
-
-  const openConsole = () => {
-    consoleDrawer.classList.add("open");
-    consoleTab.classList.remove("has-new");
-    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "console"));
-  };
-  const closeConsole = () => {
-    consoleDrawer.classList.remove("open");
-    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "scene"));
-  };
-  tabButtons.forEach((btn) =>
-    btn.addEventListener("click", () => (btn.dataset.tab === "console" ? openConsole() : closeConsole()))
-  );
-  document.querySelector("#console-close")?.addEventListener("click", closeConsole);
+  const consoleUi = setupConsole();
 
   // valueAsNumber — основной путь; запасной разбор с заменой запятой нужен
   // для iPhone с русской клавиатурой, где в десятичное поле вводится "0,05".
@@ -158,17 +133,8 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
     renderCodeTask();
   });
 
-  // Консоль сама открывается только после ПЕРВОЙ попытки — чтобы человек узнал,
-  // что она есть. Дальше, пока он экспериментирует, она не выскакивает на каждый
-  // прыжок: на вкладке загорается точка, а результаты копятся историей.
-  let consoleAutoOpened = false;
-  const history: string[] = [];
-  const MAX_HISTORY = 12;
-  let attempt = 0;
-
   demo.onOutcome = (outcome, meta) => {
     state.numbersAttempts += 1;
-    attempt += 1;
     const text = messages[outcome](meta.dip);
     const ok = outcome === "good-jump";
 
@@ -176,33 +142,18 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
     status.className = "viewport-status " + (ok ? "ok" : outcome === "idle" ? "" : "warn");
 
     const p = demo.getParams();
-    history.unshift(`
-      <div class="attempt">
-        <div class="attempt-head">
-          <span class="${ok ? "ok" : "warn"}">${ok ? "[✓]" : "[!]"}</span>
-          Попытка ${attempt}
-          <span class="muted">· Jump Force ${p.jumpForce} · Gravity ${p.gravityScale} · Ground Check ${p.groundCheckDistance}</span>
-        </div>
-        <div class="attempt-text">${text}</div>
-      </div>`);
-    // у предыдущей "свежей" записи снимаем акцент
-    if (history.length > 1) history[1] = history[1].replace('class="attempt"', 'class="attempt attempt--old"');
-    if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
-    consoleOutput.innerHTML = history.join("");
-
-    if (!consoleAutoOpened) {
-      consoleAutoOpened = true;
-      openConsole();
-    } else if (!consoleDrawer.classList.contains("open")) {
-      consoleTab.classList.add("has-new");
-    }
+    consoleUi.push({
+      ok,
+      text,
+      meta: `Jump Force ${p.jumpForce} · Gravity ${p.gravityScale} · Ground Check ${p.groundCheckDistance}`,
+    });
 
     if (ok) next.enable();
   };
 
   const runJump = () => {
     // консоль перекрывает низ сцены, где стоит кубик — на время прыжка прячем её
-    closeConsole();
+    consoleUi.close();
     demo.reset();
     demo.tryJump();
   };

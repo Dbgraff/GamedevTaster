@@ -11,6 +11,7 @@ import {
   TASK_TITLES,
 } from "../ui/shell";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
+import { renderConsoleDrawer, setupConsole } from "../ui/console";
 import { state } from "../state";
 import { renderTask3 } from "./task3";
 
@@ -81,15 +82,7 @@ export function renderCodeTask() {
             <div class="viewport" id="game-view">
               <canvas id="canvas"></canvas>
             </div>
-            <div class="console-drawer" id="console-drawer">
-              <div class="console-drawer-header">
-                <span>Console</span>
-                <button type="button" id="console-close" class="console-drawer-close" aria-label="Закрыть">✕</button>
-              </div>
-              <div class="console" id="console-output">
-                <span class="muted">&gt; Собери блоки и нажми Play, чтобы увидеть разбор здесь.</span>
-              </div>
-            </div>
+            ${renderConsoleDrawer()}
           </div>
           <div class="viewport-status" id="viewport-status">Собери блоки и нажми Play.</div>
         </div>
@@ -129,9 +122,6 @@ export function renderCodeTask() {
   const simulator = new BlockJumpSimulator(canvas);
   const resizeObserver = new ResizeObserver(() => simulator.resize());
   resizeObserver.observe(canvas);
-  const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
-  const consoleDrawer = document.querySelector<HTMLDivElement>("#console-drawer")!;
-  const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
   const runBtn = document.querySelector<HTMLButtonElement>("#run-btn")!;
   const viewportStatus = document.querySelector<HTMLDivElement>("#viewport-status")!;
   const next = setupNextButtons(renderTask3);
@@ -141,18 +131,7 @@ export function renderCodeTask() {
     emptyText: `<span class="only-desktop">Перетащи сюда блоки из списка выше (или кликни по блоку)</span><span class="only-mobile">Нажимай на блоки выше — они встанут сюда по порядку</span>`,
   });
 
-  const openConsole = () => {
-    consoleDrawer.classList.add("open");
-    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "console"));
-  };
-  const closeConsole = () => {
-    consoleDrawer.classList.remove("open");
-    tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "game"));
-  };
-  tabButtons.forEach((btn) =>
-    btn.addEventListener("click", () => (btn.dataset.tab === "console" ? openConsole() : closeConsole()))
-  );
-  document.querySelector("#console-close")?.addEventListener("click", closeConsole);
+  const consoleUi = setupConsole();
 
   const runSequence = async () => {
     const sequence = builder.get();
@@ -164,8 +143,7 @@ export function renderCodeTask() {
     runBtn.disabled = true;
     viewportStatus.textContent = "Запускаю проверку…";
     viewportStatus.className = "viewport-status";
-    closeConsole();
-    consoleOutput.innerHTML = `<span class="muted">&gt; Запускаю проверку…</span>`;
+    consoleUi.close(); // чтобы были видны оба прыжка
 
     const logs1: string[] = [];
     const logs2: string[] = [];
@@ -219,7 +197,9 @@ export function renderCodeTask() {
 
     if (!ok) state.codeAttempts += 1;
 
-    viewportStatus.textContent = ok ? "Готово — последовательность стабильна." : "Есть баг — смотри разбор в Console.";
+    viewportStatus.textContent = ok
+      ? "Готово — последовательность стабильна. Разбор — во вкладке Console."
+      : "Есть баг — открой Console, чтобы понять почему.";
     viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
 
     const logLines = (label: string, lines: string[]) =>
@@ -228,24 +208,28 @@ export function renderCodeTask() {
           lines.map((l) => `<div><span class="info">[i]</span> ${l}</div>`).join("")
         : "";
 
-    consoleOutput.innerHTML = `
-      <div><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${verdict}</span></div>
-      <div class="trial-bars" style="margin: 14px 0;">
-        <div class="trial-bar">
-          <div class="bar-track"><div class="bar-fill" style="height:${bar(trial1.peakHeight)}%"></div></div>
-          <span>Прыжок 1</span>
+    consoleUi.push({
+      ok,
+      text: verdict,
+      meta: `блоков в сборке: ${sequence.length}`,
+      details: `
+        <div class="muted" style="margin-top:8px">// сборка: ${sequence.map((id, i) => `${i + 1}. ${BLOCK_LABELS[id]}`).join(" → ")}</div>
+        <div class="trial-bars" style="margin: 14px 0;">
+          <div class="trial-bar">
+            <div class="bar-track"><div class="bar-fill" style="height:${bar(trial1.peakHeight)}%"></div></div>
+            <span>Прыжок 1</span>
+          </div>
+          <div class="trial-bar">
+            <div class="bar-track"><div class="bar-fill" style="height:${bar(trial2.peakHeight)}%"></div></div>
+            <span>Прыжок 2</span>
+          </div>
         </div>
-        <div class="trial-bar">
-          <div class="bar-track"><div class="bar-fill" style="height:${bar(trial2.peakHeight)}%"></div></div>
-          <span>Прыжок 2</span>
-        </div>
-      </div>
-      <div><span class="muted">&gt;</span> Прыжок 1 (с пола): пик ${trial1.peakHeight}px${trial1.didJump ? "" : " — прыжка не было"}</div>
-      ${logLines("что реально выполнилось", logs1)}
-      <div style="margin-top:10px"><span class="muted">&gt;</span> Прыжок 2 (после падения): пик ${trial2.peakHeight}px${trial2.didJump ? "" : " — прыжка не было"}</div>
-      ${logLines("что реально выполнилось", logs2)}
-    `;
-    openConsole();
+        <div><span class="muted">&gt;</span> Прыжок 1 (с пола): пик ${trial1.peakHeight}px${trial1.didJump ? "" : " — прыжка не было"}</div>
+        ${logLines("что реально выполнилось", logs1)}
+        <div style="margin-top:10px"><span class="muted">&gt;</span> Прыжок 2 (после падения): пик ${trial2.peakHeight}px${trial2.didJump ? "" : " — прыжка не было"}</div>
+        ${logLines("что реально выполнилось", logs2)}
+      `,
+    });
   };
 
   runBtn.addEventListener("click", runSequence);
