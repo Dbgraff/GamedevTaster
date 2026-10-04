@@ -1,6 +1,6 @@
 import { Scene2D, CORRECT_COMPONENTS, type ObjectSpec } from "../engines/scene2d";
 import { render, setupHints, setupNextButtons } from "../ui/shell";
-import { renderTaskLayout, codeBlock, setStatus } from "../ui/taskLayout";
+import { renderTaskLayout, codeBlock, setStatus, whileLocked } from "../ui/taskLayout";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { setupConsole } from "../ui/console";
 import { registerAttempt } from "../state";
@@ -136,10 +136,8 @@ export function renderTask7() {
       },
     });
 
-    runBtn.disabled = true;
     setStatus(status, "Кубик собирает монетки…");
-    const result = await scene.run();
-    runBtn.disabled = false;
+    const result = await whileLocked(runBtn, () => scene.run());
 
     const ok = score === 3 && labelText === "3";
     registerAttempt(7, ok);

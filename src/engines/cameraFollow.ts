@@ -107,6 +107,7 @@ export class CameraFollowDemo {
   }
 
   resize() {
+    if (!this.canvas.isConnected) return; // canvas уже убран со страницы при смене задания
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
     this.width = Math.max(1, Math.round(rect.width));
@@ -163,9 +164,14 @@ export class CameraFollowDemo {
     };
 
     return new Promise((resolve) => {
-      const start = performance.now();
+      // Время кадра от браузера может оказаться чуть РАНЬШЕ момента нажатия Play —
+      // тогда номер кадра выходил -1, кадра не было, и прогон падал (кнопка Play
+      // оставалась заблокированной). Поэтому отсчёт ведём от первого кадра и
+      // зажимаем номер в границы массива.
+      let start: number | null = null;
       const tick = (now: number) => {
-        const f = Math.min(total - 1, Math.floor(((now - start) / 1000) * FPS));
+        if (start === null) start = now;
+        const f = Math.max(0, Math.min(total - 1, Math.floor(((now - start) / 1000) * FPS)));
         this.cam = frames[f].cam;
         this.player = frames[f].player;
         this.draw();

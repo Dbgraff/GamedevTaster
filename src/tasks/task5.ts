@@ -1,6 +1,6 @@
 import { CameraFollowDemo, CAM_LINES, compileCameraScript, type CamLineId, type CamMethod, type CamRunStats } from "../engines/cameraFollow";
 import { render, setupHints, setupNextButtons } from "../ui/shell";
-import { renderTaskLayout, codeBlock, setStatus } from "../ui/taskLayout";
+import { renderTaskLayout, codeBlock, setStatus, whileLocked } from "../ui/taskLayout";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { setupConsole } from "../ui/console";
 import { registerAttempt } from "../state";
@@ -144,10 +144,8 @@ export function renderTask5() {
       return;
     }
 
-    runBtn.disabled = true;
     setStatus(status, "Камера снимает…");
-    const stats = await demo.run(method, lines);
-    runBtn.disabled = false;
+    const stats = await whileLocked(runBtn, () => demo.run(method!, lines));
 
     const ok = method === "LateUpdate" && JSON.stringify(lines) === JSON.stringify(CORRECT);
     registerAttempt(5, ok);

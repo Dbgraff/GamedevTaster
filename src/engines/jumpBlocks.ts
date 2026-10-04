@@ -49,6 +49,7 @@ export class BlockJumpSimulator {
   }
 
   resize() {
+    if (!this.canvas.isConnected) return; // canvas уже убран со страницы при смене задания
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
@@ -143,7 +144,7 @@ export class BlockJumpSimulator {
       velY = Math.max(velY, -maxVel);
 
       const step = (time: number) => {
-        const dt = Math.min((time - last) / 1000, 0.05);
+        const dt = Math.max(0, Math.min((time - last) / 1000, 0.05));
         last = time;
         velY += gravityScale * GRAVITY_SCALE_MULT * dt;
         posY += velY * dt;

@@ -81,3 +81,15 @@ export function setStatus(el: HTMLElement, text: string, kind: "ok" | "warn" | "
   el.innerHTML = text;
   el.className = "viewport-status" + (kind ? ` ${kind}` : "");
 }
+
+// Блокирует кнопку на время прогона и ГАРАНТИРОВАННО разблокирует её после —
+// даже если внутри что-то упало. Иначе одна ошибка посреди анимации оставляла
+// Play заблокированной, и казалось, что курс завис.
+export async function whileLocked<T>(btn: HTMLButtonElement, run: () => Promise<T>): Promise<T> {
+  btn.disabled = true;
+  try {
+    return await run();
+  } finally {
+    btn.disabled = false;
+  }
+}

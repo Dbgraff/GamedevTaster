@@ -57,6 +57,7 @@ export class PlatformerDemo {
   // размер (с учётом devicePixelRatio — иначе на Retina/масштабированных
   // экранах картинка будет мыльной). Вызывать при монтировании и на resize.
   resize() {
+    if (!this.canvas.isConnected) return; // canvas уже убран со страницы при смене задания
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
@@ -118,7 +119,7 @@ export class PlatformerDemo {
     if (this.animId !== null) return;
     this.lastTime = performance.now();
     const step = (time: number) => {
-      const dt = Math.min((time - this.lastTime) / 1000, 0.05);
+      const dt = Math.max(0, Math.min((time - this.lastTime) / 1000, 0.05));
       this.lastTime = time;
       this.update(dt, time);
       this.draw();
@@ -133,7 +134,7 @@ export class PlatformerDemo {
 
   private update(dt: number, time: number) {
     if (this.correcting) {
-      const t = Math.min((time - this.correctionStart) / CORRECTION_MS, 1);
+      const t = Math.max(0, Math.min((time - this.correctionStart) / CORRECTION_MS, 1));
       const eased = 1 - Math.pow(1 - t, 3);
       this.posY = this.correctionFrom + (this.restY - this.correctionFrom) * eased;
       if (t >= 1) this.correcting = false;

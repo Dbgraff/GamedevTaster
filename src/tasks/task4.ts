@@ -1,6 +1,6 @@
 import { Scene2D, type BodyConfig, type ObjectSpec } from "../engines/scene2d";
 import { render, setupHints, setupNextButtons } from "../ui/shell";
-import { renderTaskLayout, setStatus } from "../ui/taskLayout";
+import { renderTaskLayout, setStatus, whileLocked } from "../ui/taskLayout";
 import { setupConsole } from "../ui/console";
 import { registerAttempt } from "../state";
 import { renderTask5 } from "./task5";
@@ -118,11 +118,9 @@ export function renderTask4() {
   };
 
   const runScene = async () => {
-    runBtn.disabled = true;
     consoleUi.close();
     setStatus(status, "Запускаю сцену…");
-    const result = await scene.run();
-    runBtn.disabled = false;
+    const result = await whileLocked(runBtn, () => scene.run());
 
     const issues = diagnose();
     const ok = issues.length === 0;

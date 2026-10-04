@@ -11,6 +11,7 @@ import {
   TASK_TITLES,
 } from "../ui/shell";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
+import { whileLocked } from "../ui/taskLayout";
 import { renderConsoleDrawer, setupConsole } from "../ui/console";
 import { state, registerAttempt } from "../state";
 import { renderTask3 } from "./task3";
@@ -140,7 +141,6 @@ export function renderCodeTask() {
       viewportStatus.className = "viewport-status warn";
       return;
     }
-    runBtn.disabled = true;
     viewportStatus.textContent = "Запускаю проверку…";
     viewportStatus.className = "viewport-status";
     consoleUi.close(); // чтобы были видны оба прыжка
@@ -148,11 +148,12 @@ export function renderCodeTask() {
     const logs1: string[] = [];
     const logs2: string[] = [];
 
-    const trial1 = await simulator.runTrial(sequence, 0, 8, 15, (line) => logs1.push(line));
-    await new Promise((r) => setTimeout(r, 250));
-    const trial2 = await simulator.runTrial(sequence, 180, 8, 15, (line) => logs2.push(line)); // как будто персонаж только что падал
-
-    runBtn.disabled = false;
+    const [trial1, trial2] = await whileLocked(runBtn, async () => {
+      const t1 = await simulator.runTrial(sequence, 0, 8, 15, (line) => logs1.push(line));
+      await new Promise((r) => setTimeout(r, 250));
+      const t2 = await simulator.runTrial(sequence, 180, 8, 15, (line) => logs2.push(line)); // как будто персонаж только что падал
+      return [t1, t2] as const;
+    });
 
     const maxH = Math.max(trial1.peakHeight, trial2.peakHeight, 1);
     const bar = (h: number) => Math.min(100, Math.round((h / maxH) * 100));

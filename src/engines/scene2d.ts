@@ -118,6 +118,7 @@ export class Scene2D {
   }
 
   resize() {
+    if (!this.canvas.isConnected) return; // canvas уже убран со страницы при смене задания
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
     this.width = Math.max(1, Math.round(rect.width));
@@ -277,7 +278,7 @@ export class Scene2D {
       let acc = 0;
       let last = performance.now();
       const frame = (now: number) => {
-        acc += Math.min((now - last) / 1000, 0.05);
+        acc += Math.max(0, Math.min((now - last) / 1000, 0.05));
         last = now;
         while (acc >= STEP && simTime < DURATION) {
           step(STEP);
@@ -301,7 +302,8 @@ export class Scene2D {
     const { ctx, width, height } = this;
     const groundY = height - GROUND_PX;
     // масштаб: мир целиком влезает по ширине и стена — по высоте
-    const scale = Math.min(width / (WORLD_W + 40), (groundY - 20) / 140, 1.6);
+    if (width < 20 || height < GROUND_PX + 40) return; // слишком маленький холст — рисовать нечего
+    const scale = Math.max(0.2, Math.min(width / (WORLD_W + 40), (groundY - 20) / 140, 1.6));
     const offsetX = (width - WORLD_W * scale) / 2;
     const sx = (x: number) => offsetX + x * scale;
     const sy = (y: number) => groundY - y * scale;
