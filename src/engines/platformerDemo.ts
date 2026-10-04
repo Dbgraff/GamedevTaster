@@ -36,6 +36,7 @@ export class PlatformerDemo {
   private maxHeightReached = 0;
 
   private correcting = false;
+  private layoutReady = false; // первый resize ставит кубик на пол, дальше — только сдвиг вместе с полом
   private correctionStart = 0;
   private correctionFrom = 0;
 
@@ -73,12 +74,23 @@ export class PlatformerDemo {
     this.canvas.height = Math.round(height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const wasGrounded = this.isGrounded && !this.correcting;
-    this.groundY = height - 56;
-    if (wasGrounded) {
-      this.restY = this.groundY;
-      this.posY = this.groundY;
+    // При смене размера (например, строка статуса под сценой стала длиннее после
+    // первого прыжка) пол сдвигается. Сдвигаем вместе с ним ВСЕ вертикальные
+    // позиции — так сохраняется высота кубика над полом, в каком бы состоянии он
+    // ни был: стоит, летит, "доводится" после провала или завис в воздухе.
+    // Раньше стоящий кубик просто ставился на пол — и зависший тоже, потому что
+    // он тоже считается стоящим: сообщение говорило "завис", а кубик был на полу.
+    const newGroundY = height - 56;
+    if (!this.layoutReady) {
+      this.layoutReady = true;
+      this.posY = this.restY = newGroundY;
+    } else {
+      const dy = newGroundY - this.groundY;
+      this.posY += dy;
+      this.restY += dy;
+      this.correctionFrom += dy;
     }
+    this.groundY = newGroundY;
     this.draw();
   }
 
@@ -166,7 +178,15 @@ export class PlatformerDemo {
     // игра считает его стоящим и останавливает прямо в воздухе. Высота "зависания"
     // считается от длины проверки, а не от тайминга кадра — результат стабильный.
     const checkRadius = this.params.groundCheckDistance * PX_PER_UNIT;
-    if (this.velY >= 0 && checkRadius > HOVER_LIMIT_PX && this.groundY - this.posY <= checkRadius) {
+    // Для еле заметного прыжка (ниже MIN_JUMP_HEIGHT) зависание было бы в 2–4px —
+    // глазом неотличимо от касания пола. Там главная проблема — что прыжка почти нет,
+    // поэтому такой прыжок приземляется как обычно и получает "too-weak".
+    if (
+      this.velY >= 0 &&
+      checkRadius > HOVER_LIMIT_PX &&
+      this.maxHeightReached >= MIN_JUMP_HEIGHT &&
+      this.groundY - this.posY <= checkRadius
+    ) {
       const gap = Math.round(Math.min(checkRadius, this.maxHeightReached));
       this.posY = this.groundY - gap;
       this.velY = 0;
