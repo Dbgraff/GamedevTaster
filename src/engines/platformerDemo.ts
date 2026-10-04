@@ -10,10 +10,14 @@ export interface PhysicsParams {
   groundCheckDistance: number; // 0.02–0.30, аналог радиуса проверки земли (в юнитах)
 }
 
-export type PlayOutcome = "idle" | "no-jump" | "too-weak" | "clipped-floor" | "good-jump";
+export type PlayOutcome = "idle" | "no-jump" | "too-weak" | "clipped-floor" | "hovering" | "good-jump";
 
 const MIN_JUMP_HEIGHT = 24; // px — прыжок ниже этого порога не считается "нормальным"
 const CORRECTION_MS = 220; // сколько длится "доводка" персонажа обратно на пол
+// Проверка земли длиннее этого (в px) ловит пол, пока персонаж ещё в воздухе:
+// игра решает, что он уже стоит, и он "встаёт" над полом. Вместе с провалом
+// при слишком короткой проверке это даёт честное окно "не мало и не много".
+const HOVER_LIMIT_PX = 15;
 
 export class PlatformerDemo {
   private canvas: HTMLCanvasElement;
@@ -84,6 +88,8 @@ export class PlatformerDemo {
 
   setParams(params: Partial<PhysicsParams>) {
     this.params = { ...this.params, ...params };
+    // линия проверки земли должна меняться сразу, как игрок ввёл новое значение
+    if (this.animId === null) this.draw();
   }
 
   reset() {
@@ -95,6 +101,11 @@ export class PlatformerDemo {
     this.maxHeightReached = 0;
     this.correcting = false;
     this.draw();
+  }
+
+  // Кубик в воздухе или его ещё "доводят" на пол — новый прыжок начинать нельзя
+  isBusy(): boolean {
+    return !this.isGrounded || this.correcting;
   }
 
   tryJump() {
@@ -149,6 +160,23 @@ export class PlatformerDemo {
     const heightAboveGround = this.groundY - this.posY;
     if (heightAboveGround > this.maxHeightReached) {
       this.maxHeightReached = heightAboveGround;
+    }
+
+    // Слишком длинная проверка земли дотягивается до пола, пока кубик ещё падает:
+    // игра считает его стоящим и останавливает прямо в воздухе. Высота "зависания"
+    // считается от длины проверки, а не от тайминга кадра — результат стабильный.
+    const checkRadius = this.params.groundCheckDistance * PX_PER_UNIT;
+    if (this.velY >= 0 && checkRadius > HOVER_LIMIT_PX && this.groundY - this.posY <= checkRadius) {
+      const gap = Math.round(Math.min(checkRadius, this.maxHeightReached));
+      this.posY = this.groundY - gap;
+      this.velY = 0;
+      this.isGrounded = true;
+      this.onOutcome?.("hovering", {
+        peakHeight: Math.round(this.maxHeightReached),
+        airTime: Math.round(this.elapsedAirTime * 1000),
+        dip: gap, // для "hovering" здесь высота зависания над полом
+      });
+      return;
     }
 
     if (this.posY >= this.groundY && this.velY >= 0) {
@@ -235,5 +263,23 @@ export class PlatformerDemo {
     ctx.arc(width / 2 - 8, posY - size + 14, 3, 0, Math.PI * 2);
     ctx.arc(width / 2 + 8, posY - size + 14, 3, 0, Math.PI * 2);
     ctx.fill();
+
+    // Проверка земли, как Debug.DrawRay в Unity: зелёная линия вниз от ног
+    // длиной Ground Check Distance — видно, достаёт ли она до пола и когда
+    const ray = this.params.groundCheckDistance * PX_PER_UNIT;
+    ctx.save();
+    ctx.strokeStyle = "rgba(74, 222, 128, 0.9)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath();
+    ctx.moveTo(width / 2, posY);
+    ctx.lineTo(width / 2, posY + ray);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(74, 222, 128, 0.9)";
+    ctx.beginPath();
+    ctx.arc(width / 2, posY + ray, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 }
