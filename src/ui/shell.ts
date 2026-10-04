@@ -152,6 +152,31 @@ document.addEventListener("click", (e) => {
   toggle.textContent = open ? "✕" : "☰";
 });
 
+// ---------- Мобильный автоскролл к сцене по нажатию Play ----------
+// На телефоне Play прибита к низу экрана, а сцена — наверху страницы: человек
+// жмёт Play, глядя на поля или блоки, и пропускает саму анимацию. Поэтому по
+// нажатию любой Play в нижней панели (во всех заданиях, включая будущие)
+// плавно поднимаем страницу к сцене. Если сцена уже целиком видна — не дёргаем.
+const MOBILE_QUERY = window.matchMedia("(max-width: 760px)");
+const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function sceneFullyVisible(scene: HTMLElement): boolean {
+  const rect = scene.getBoundingClientRect();
+  const headerBottom = document.querySelector(".mobile-header")?.getBoundingClientRect().bottom ?? 0;
+  const barTop = document.querySelector(".action-bar")?.getBoundingClientRect().top ?? window.innerHeight;
+  return rect.top >= headerBottom - 1 && rect.bottom <= barTop + 1;
+}
+
+document.addEventListener("click", (e) => {
+  if (!MOBILE_QUERY.matches) return;
+  const play = (e.target as HTMLElement).closest<HTMLButtonElement>(".action-bar .primary");
+  if (!play || play.disabled) return;
+  const scene = document.querySelector<HTMLElement>(".scene-col:not(.scene-col--static)");
+  if (!scene || sceneFullyVisible(scene)) return;
+  // отступ под шапку задаётся через scroll-margin-top у .scene-col в CSS
+  scene.scrollIntoView({ behavior: REDUCED_MOTION.matches ? "auto" : "smooth", block: "start" });
+}, true); // фаза перехвата: срабатываем ДО обработчика задания, который тут же блокирует кнопку на время прогона
+
 // ---------- Кнопка "Дальше" — на мобильном дублируется рядом с Play ----------
 // На узких экранах левая панель с описанием задания уходит наверх страницы,
 // а Play — вниз и приклеена к экрану. Если "Дальше" жила бы только в левой

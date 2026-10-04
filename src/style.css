@@ -781,6 +781,8 @@ body:has(.editor-shell) {
   .scene-col {
     width: auto !important;
     margin: 12px 16px 0;
+    /* при автоскролле по Play сцена встаёт под шапку, а не уезжает под неё */
+    scroll-margin-top: calc(62px + env(safe-area-inset-top, 0px));
     position: relative;
     border: 1px solid #333;
     border-radius: 12px;
