@@ -16,13 +16,14 @@ export interface TaskLayout {
   n: number;
   title: string;
   leads: string[]; // абзацы описания (можно с HTML)
-  hints: [string, string];
+  hints: string[]; // от наводящего вопроса к прямому указанию; на уровне C их больше
   sceneTabLabel?: string; // "Scene" или "Game"
   sceneHtml: string; // что лежит в сцене под консолью (обычно canvas)
   inspectorHtml: string;
   wideInspector?: boolean; // для заданий с кодом строки длинные
   playLabel?: string;
   initialStatus: string;
+  finishButton?: boolean; // задания 7–10: можно закончить курс и перейти к опросу
 }
 
 export function renderTaskLayout(t: TaskLayout): string {
@@ -39,6 +40,7 @@ export function renderTaskLayout(t: TaskLayout): string {
             <h2>${t.title}</h2>
             ${t.leads.map((l) => `<p class="lead">${l}</p>`).join("")}
             ${renderHintBlock(t.hints)}
+            ${t.finishButton ? `<button type="button" id="finish-btn" class="text-btn finish-btn">Закончить и пройти опрос</button>` : ""}
           </div>
           ${renderNextButton()}
         </div>

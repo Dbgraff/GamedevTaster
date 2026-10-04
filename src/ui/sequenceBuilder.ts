@@ -17,13 +17,14 @@ interface Options<T extends string> {
   paletteSelector?: string;
   sequenceSelector?: string;
   clearSelector?: string;
+  initial?: T[]; // уже собранный код (финальное задание: баг нужно найти, а не собрать с нуля)
 }
 
 export function setupSequenceBuilder<T extends string>(opts: Options<T>): SequenceBuilder<T> {
   const sequenceEl = document.querySelector<HTMLDivElement>(opts.sequenceSelector ?? "#sequence")!;
   const paletteBlocks = document.querySelectorAll<HTMLElement>(`${opts.paletteSelector ?? "#palette"} .block`);
 
-  let sequence: T[] = [];
+  let sequence: T[] = [...(opts.initial ?? [])];
   let dragPayload: { source: "palette" | "sequence"; block: T; index?: number } | null = null;
   let flashIndex: number | null = null;
 

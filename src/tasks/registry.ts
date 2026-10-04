@@ -9,6 +9,9 @@ import { renderTask4 } from "./task4";
 import { renderTask5 } from "./task5";
 import { renderTask6 } from "./task6";
 import { renderTask7 } from "./task7";
+import { renderTask8 } from "./task8";
+import { renderTask9 } from "./task9";
+import { renderTask10 } from "./task10";
 
 const TASKS: Record<number, () => void> = {
   1: () => renderNumbersTask(),
@@ -18,6 +21,9 @@ const TASKS: Record<number, () => void> = {
   5: renderTask5,
   6: renderTask6,
   7: renderTask7,
+  8: renderTask8,
+  9: renderTask9,
+  10: renderTask10,
 };
 
 export function getTaskRenderer(n: number): (() => void) | undefined {

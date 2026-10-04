@@ -5,6 +5,7 @@ import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { setupConsole } from "../ui/console";
 import { registerAttempt, enterTask } from "../state";
 import { showCheckpointModal } from "./checkpoint";
+import { setupFinishButton } from "./finish";
 
 type LineId = "inc" | "label" | "assignWrong" | "textWrong";
 
@@ -55,6 +56,7 @@ export function renderTask7() {
       sceneHtml: `<canvas id="canvas"></canvas>`,
       initialStatus: "Собери метод AddScore и нажми Play.",
       wideInspector: true,
+      finishButton: true,
       inspectorHtml: `
         <div class="section-card">
           <p class="section-title">Строки кода</p>
@@ -184,6 +186,7 @@ export function renderTask7() {
   };
 
   runBtn.addEventListener("click", runScene);
+  setupFinishButton();
   setupHints(7);
   enterTask(7);
 }

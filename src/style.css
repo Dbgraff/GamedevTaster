@@ -709,6 +709,27 @@ body:has(.editor-shell) {
   border-left: 2px solid #333; padding: 6px 10px; margin-top: 4px; line-height: 1.6;
 }
 
+/* ---------- Задания 8–10 ---------- */
+.finish-btn { display: block; margin-top: 14px; padding: 4px 0; font-size: 13px; color: #9a9aa6; }
+.finish-btn:hover { color: #e2e2e8; }
+
+/* задание 9: выбор одной строки */
+.choice-list { display: flex; flex-direction: column; gap: 6px; }
+.choice-btn {
+  text-align: left; cursor: pointer;
+  background: #1e2338; border: 1px solid #3a3a3c; border-radius: 8px;
+  padding: 9px 12px; color: #e6edf3;
+}
+.choice-btn code { background: none; padding: 0; }
+.choice-btn.active { border-color: var(--accent-strong); background: #12324a; }
+@media (hover: hover) { .choice-btn:hover { border-color: var(--accent-strong); } }
+.code-slot { border: 1px dashed #3a3f5c; border-radius: 4px; color: #6b6b7a; margin: 2px 0; padding: 2px 6px !important; }
+.code-slot.filled { border-color: var(--accent-strong); color: #e0f2fe; background: rgba(56, 189, 248, 0.08); }
+
+/* задание 10: подписи объектов в общей карточке компонентов */
+.comp-obj { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: #c7c7c7; }
+.comp-obj:first-of-type { margin-top: 0; }
+
 /* ---------- Итоговый разбор ---------- */
 .profile-summary {
   margin: 16px 0 6px; padding: 12px 14px;

@@ -20,6 +20,8 @@ export const progress = {
   times: {} as Record<number, number>,
   flags: new Set<string>(),
   checkpoint: null as null | "survey" | "continue",
+  // как попал в опрос: развилка после 7 / кнопка "Закончить" на 7–10 / прошёл всё
+  exitPoint: null as null | "checkpoint" | "finish_button" | "completed",
   startedAt: Date.now(),
 };
 
@@ -64,5 +66,6 @@ export function resetSession() {
   progress.times = {};
   progress.flags = new Set();
   progress.checkpoint = null;
+  progress.exitPoint = null;
   progress.startedAt = Date.now();
 }

@@ -84,6 +84,16 @@ const GROUND_PX = 56;
 
 const solid = (o: SceneObject) => o.cfg.collider && !o.cfg.isTrigger;
 
+// Для финального задания: мир шире экрана и камера, которая едет за кубиком.
+//   LateUpdate — камера всегда видит актуальную позицию кубика, едет плавно;
+//   Update — порядок Update не гарантирован, камера иногда видит позицию на
+//   несколько шагов старее и подёргивается (как в задании 5).
+export interface SceneOptions {
+  worldWidth?: number;
+  duration?: number;
+  camera?: "LateUpdate" | "Update" | null;
+}
+
 export class Scene2D {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -93,8 +103,11 @@ export class Scene2D {
   private specs: ObjectSpec[];
   private handlers: SceneHandlers = {};
   private running = false;
+  private opts: SceneOptions = {};
+  private playerTrail: number[] = []; // позиции кубика по шагам — откуда камера в Update берёт "старую"
 
-  constructor(canvas: HTMLCanvasElement, specs: ObjectSpec[]) {
+  constructor(canvas: HTMLCanvasElement, specs: ObjectSpec[], opts: SceneOptions = {}) {
+    this.opts = opts;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas 2D context not available");
     this.canvas = canvas;
@@ -102,6 +115,11 @@ export class Scene2D {
     this.specs = specs;
     this.build();
     this.resize();
+  }
+
+  setOptions(opts: SceneOptions) {
+    this.opts = { ...this.opts, ...opts };
+    if (!this.running) this.draw();
   }
 
   setSpecs(specs: ObjectSpec[]) {
@@ -267,12 +285,14 @@ export class Scene2D {
         }
       }
 
-      if (player.x > WORLD_W + 20 && !result.playerLeftScene) {
+      if (player.x > (this.opts.worldWidth ?? WORLD_W) + 20 && !result.playerLeftScene) {
         result.playerLeftScene = true;
         log("Кубик уехал за край сцены — его ничто не остановило");
       }
     };
 
+    const duration = this.opts.duration ?? DURATION;
+    this.playerTrail = [player.x];
     return new Promise((resolve) => {
       let simTime = 0;
       let acc = 0;
@@ -280,13 +300,14 @@ export class Scene2D {
       const frame = (now: number) => {
         acc += Math.max(0, Math.min((now - last) / 1000, 0.05));
         last = now;
-        while (acc >= STEP && simTime < DURATION) {
+        while (acc >= STEP && simTime < duration) {
           step(STEP);
+          this.playerTrail.push(player.x);
           acc -= STEP;
           simTime += STEP;
         }
         this.draw();
-        if (simTime < DURATION) {
+        if (simTime < duration) {
           requestAnimationFrame(frame);
         } else {
           this.running = false;
@@ -303,9 +324,27 @@ export class Scene2D {
     const groundY = height - GROUND_PX;
     // масштаб: мир целиком влезает по ширине и стена — по высоте
     if (width < 20 || height < GROUND_PX + 40) return; // слишком маленький холст — рисовать нечего
-    const scale = Math.max(0.2, Math.min(width / (WORLD_W + 40), (groundY - 20) / 140, 1.6));
-    const offsetX = (width - WORLD_W * scale) / 2;
-    const sx = (x: number) => offsetX + x * scale;
+    const cameraMode = this.opts.camera ?? null;
+    let sx: (x: number) => number;
+    let scale: number;
+    let camX = 0;
+    if (cameraMode) {
+      // камера следует за кубиком: масштаб — по высоте, мир шире экрана
+      scale = Math.max(0.2, Math.min((groundY - 20) / 140, 1.6));
+      const trail = this.playerTrail;
+      const player = this.objects.find((o) => o.kind === "player");
+      let seenX = player?.x ?? 0;
+      if (cameraMode === "Update" && trail.length > 1) {
+        const stale = Math.floor(Math.random() * 7); // 0–6 шагов назад
+        seenX = trail[Math.max(0, trail.length - 1 - stale)];
+      }
+      camX = seenX + 120;
+      sx = (x: number) => width / 2 + (x - camX) * scale;
+    } else {
+      scale = Math.max(0.2, Math.min(width / (WORLD_W + 40), (groundY - 20) / 140, 1.6));
+      const offsetX = (width - WORLD_W * scale) / 2;
+      sx = (x: number) => offsetX + x * scale;
+    }
     const sy = (y: number) => groundY - y * scale;
 
     ctx.clearRect(0, 0, width, height);
@@ -332,6 +371,17 @@ export class Scene2D {
     ctx.moveTo(0, groundY);
     ctx.lineTo(width, groundY);
     ctx.stroke();
+    if (cameraMode) {
+      ctx.font = "10px ui-monospace, Consolas, monospace";
+      ctx.textAlign = "center";
+      const first = Math.floor((camX - width / 2 / scale) / 100) * 100;
+      for (let wx = first; wx < camX + width / 2 / scale + 100; wx += 100) {
+        ctx.fillStyle = "rgba(125,211,252,0.12)";
+        ctx.fillRect(sx(wx) - 2, groundY - 70 * scale, 4, 70 * scale);
+        ctx.fillStyle = "rgba(200,210,230,0.4)";
+        ctx.fillText(String(wx), sx(wx), groundY - 76 * scale);
+      }
+    }
 
     for (const o of this.objects) {
       if (!o.alive) continue;

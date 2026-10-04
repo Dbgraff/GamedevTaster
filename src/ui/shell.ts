@@ -52,7 +52,7 @@ export const TASK_TITLES = [
   "Game Over",
   "Финальный баг",
 ];
-export const TASKS_BUILT = 7; // сколько заданий пока реально реализовано
+export const TASKS_BUILT = 10; // сколько заданий пока реально реализовано
 // Задания, где после проверки можно ещё и самому порулить персонажем с клавиатуры.
 const KEYBOARD_CONTROL_TASKS = new Set([1, 3]);
 
@@ -118,7 +118,7 @@ export function showIntroModal(onClose?: () => void) {
         работать с настоящим кодом. Никакой теории заранее — сразу практика.
       </p>
       <ul class="modal-list">
-        <li><span class="info-dot"></span>Сейчас доступно ${TASKS_BUILT} из ${TASK_TITLES.length} заданий, каждое — на несколько минут</li>
+        <li><span class="info-dot"></span>${TASKS_BUILT === TASK_TITLES.length ? `${TASK_TITLES.length} заданий` : `Сейчас доступно ${TASKS_BUILT} из ${TASK_TITLES.length} заданий`}, каждое — на несколько минут, от подкрутки чисел до настоящего кода</li>
         <li><span class="info-dot"></span>Застрял — жми «💡 Подсказка», у каждого задания их две</li>
         <li><span class="info-dot"></span>Что пошло не так и почему — во вкладке Console рядом со сценой</li>
         <li><span class="info-dot"></span>В конце — короткий разбор: что тебе зашло больше</li>
@@ -269,14 +269,15 @@ document.addEventListener(
 window.addEventListener("touchmove", (e) => dragState && updateResize(e.touches[0].clientX), { passive: true });
 window.addEventListener("touchend", endResize);
 
-// ---------- Двухуровневые подсказки ----------
-// hints: [текст 1 уровня (наводящий вопрос), текст 2 уровня (прямое указание)]
-export function renderHintBlock(hints: [string, string]): string {
+// ---------- Подсказки по уровням ----------
+// hints: от наводящего вопроса к прямому указанию. На уровнях A–B их две;
+// на уровне C (задания 8–10) кода без пояснений больше, поэтому уровней больше:
+// третий — "вспомни похожее задание", в финальном задании — по одному на каждый баг.
+export function renderHintBlock(hints: string[]): string {
   return `
     <div class="hint-block">
       <button type="button" id="hint-btn" class="text-btn hint-btn">💡 Подсказка</button>
-      <div id="hint-text-1" class="hint-text" style="display:none">${hints[0]}</div>
-      <div id="hint-text-2" class="hint-text" style="display:none">${hints[1]}</div>
+      ${hints.map((h, i) => `<div class="hint-text" data-hint-level="${i + 1}" style="display:none">${h}</div>`).join("")}
     </div>
   `;
 }
@@ -284,17 +285,14 @@ export function renderHintBlock(hints: [string, string]): string {
 export function setupHints(task?: number) {
   let level = 0;
   const btn = document.querySelector<HTMLButtonElement>("#hint-btn");
-  const t1 = document.querySelector<HTMLDivElement>("#hint-text-1");
-  const t2 = document.querySelector<HTMLDivElement>("#hint-text-2");
+  const texts = Array.from(document.querySelectorAll<HTMLDivElement>(".hint-text[data-hint-level]"));
   btn?.addEventListener("click", () => {
+    if (level >= texts.length) return;
+    texts[level].style.display = "block";
     level++;
     if (task !== undefined) registerHint(task);
-    if (level === 1 && t1) {
-      t1.style.display = "block";
-      if (btn) btn.textContent = "💡 Ещё подсказка";
-    } else if (level >= 2 && t2) {
-      t2.style.display = "block";
-      if (btn) btn.style.display = "none";
-    }
+    const left = texts.length - level;
+    if (left === 0) btn.style.display = "none";
+    else btn.textContent = `💡 Ещё подсказка (${left})`;
   });
 }
