@@ -1,26 +1,41 @@
 import { render, renderTaskListPanel, renderResizeHandle, TASKS_BUILT, TASK_TITLES } from "../ui/shell";
 import { state, progress, resetSession } from "../state";
-import { getFeedback } from "../feedback";
+import { buildProfile } from "../feedback";
 import { renderNumbersTask } from "./task1";
 import { getTaskRenderer, HARD_TASKS_FROM } from "./registry";
 
 // "с 1-й попытки", "со 2-й попытки" — по-русски порядковые с "с/со"
 const ordinal = (n: number) => `${n === 2 ? "со" : "с"} ${n}-й попытки`;
+const minutes = (sec: number) => (sec < 60 ? "меньше минуты" : `${Math.round(sec / 60)} мин`);
 
 export function renderFeedback() {
-  const feedback = getFeedback(state);
+  const profile = buildProfile(progress, state.reflection);
+
   // Если человек на развилке выбрал опросник, к сложным заданиям можно вернуться отсюда
   const hardTask = getTaskRenderer(HARD_TASKS_FROM);
   const canContinue = Boolean(hardTask) && progress.solvedOn[HARD_TASKS_FROM] === undefined;
+
   const taskLines = TASK_TITLES.slice(0, TASKS_BUILT)
     .map((title, i) => {
       const n = i + 1;
+      if (progress.enteredAt[n] === undefined) return "";
       const solved = progress.solvedOn[n];
+      const hints = progress.hints[n] ?? 0;
+      const extra = [
+        hints ? `подсказок: ${hints}` : "",
+        progress.times[n] !== undefined ? minutes(progress.times[n]) : "",
+      ].filter(Boolean).join(" · ");
       return `<div><span class="${solved ? "info" : "warn"}">[${solved ? "i" : "!"}]</span> Задача ${n} «${title}»: ${
         solved ? `решена ${ordinal(solved)}` : "не решена"
-      }</div>`;
+      }${extra ? ` <span class="muted">· ${extra}</span>` : ""}</div>`;
     })
     .join("");
+
+  const section = (title: string, lines: string[]) =>
+    lines.length
+      ? `<div class="profile-section"><div class="muted">// ${title}</div>${lines.map((l) => `<div class="profile-line">${l}</div>`).join("")}</div>`
+      : "";
+
   render(`
     <div class="editor-shell">
       <div class="task-banner">
@@ -33,41 +48,54 @@ export function renderFeedback() {
 
       <div class="editor-main">
         <div class="hierarchy">
-          ${renderTaskListPanel(TASKS_BUILT + 1)}
+          ${renderTaskListPanel(0)} <!-- 0: на итоговых экранах ни одно задание не "текущее" -->
         </div>
 
         ${renderResizeHandle("left")}
 
         <div class="scene-col scene-col--static">
           <div class="scene-tabs">
-            <button type="button" class="tab-btn">Scene</button>
-            <button type="button" class="tab-btn">Game</button>
             <button type="button" class="tab-btn active">Console</button>
           </div>
           <div class="deco-scene" style="background-image:none;">
             <div class="console">
-              <div><span class="muted">&gt;</span> Анализирую сессию…</div>
+              <div><span class="muted">&gt;</span> Анализирую прохождение…</div>
               ${taskLines}
-              <div><span class="ok">[✓]</span> Профиль собран</div>
-              <div style="margin-top:14px"><span class="muted">&gt;</span> Печатаю рекомендацию…</div>
-              <span class="final">${feedback}</span>
+              <div><span class="ok">[✓]</span> Профиль собран <span class="muted">· всё прохождение — около ${profile.totalMinutes} мин</span></div>
+
+              <div class="profile-summary">${profile.summary}</div>
+              ${section("что получалось", profile.strengths)}
+              ${section(
+                "где было сложно — и что это значит",
+                profile.difficulties.map((d) => `<b>«${d.title}»</b>: ${d.lessons.join("; ")}.`)
+              )}
+              ${section("как ты работал(а)", [...profile.workStyle, ...(profile.interestNote ? [profile.interestNote] : [])])}
             </div>
           </div>
-          <div class="viewport-status">Сессия завершена.</div>
+          <div class="viewport-status">Разбор собран наставником на правилах — по тому, как ты решал(а) задания.</div>
         </div>
 
         ${renderResizeHandle("right")}
 
         <div class="inspector">
-          <div class="inspector-header">
-            <p>Player</p>
-            <p>Tag: Player · Layer: Default</p>
+          <div class="section-card">
+            <p class="section-title">Твой профиль</p>
+            <div class="direction-badge">${profile.directionTitle}</div>
+            ${profile.axes
+              .map(
+                (a) => `
+              <div class="axis-row">
+                <div class="axis-head"><span>${a.title}</span><span>${a.value === null ? "—" : `${a.value}%`}</span></div>
+                <div class="axis-track"><div class="axis-fill" style="width:${a.value ?? 0}%"></div></div>
+              </div>`
+              )
+              .join("")}
+            <p class="axis-note">Чем увереннее решены задания этой темы — с первой попытки и без подсказок, — тем выше значение.</p>
           </div>
           <div class="section-card">
-            <p class="section-title">Что дальше</p>
+            <p class="section-title">Что попробовать дальше</p>
+            ${profile.next.map((n) => `<p class="next-step">${n}</p>`).join("")}
             ${canContinue ? `<button type="button" id="continue-hard" class="primary button-link">Продолжить: сложные задания →</button>` : ""}
-            <a class="primary button-link" href="#">Полноценный мини-курс →</a>
-            <a class="secondary button-link" href="#">Другая профессия (арт/дизайн) →</a>
           </div>
         </div>
       </div>

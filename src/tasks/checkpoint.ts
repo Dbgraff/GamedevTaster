@@ -46,10 +46,12 @@ export function showCheckpointModal() {
 
   modal.backdrop.querySelector('[data-choice="survey"]')?.addEventListener("click", () => {
     modal.close();
+    progress.checkpoint = "survey";
     renderReflection();
   });
   modal.backdrop.querySelector('[data-choice="continue"]')?.addEventListener("click", () => {
     modal.close();
+    progress.checkpoint = "continue";
     hardTask?.();
   });
 }

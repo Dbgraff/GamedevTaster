@@ -1,5 +1,6 @@
-import { render, renderTaskListPanel, renderResizeHandle, TASKS_BUILT } from "../ui/shell";
+import { render, renderTaskListPanel, renderResizeHandle } from "../ui/shell";
 import { state } from "../state";
+import type { Interest } from "../feedback";
 import { renderFeedback } from "./resultScreen";
 
 export function renderReflection() {
@@ -15,28 +16,33 @@ export function renderReflection() {
 
       <div class="editor-main">
         <div class="hierarchy">
-          ${renderTaskListPanel(TASKS_BUILT + 1)}
+          ${renderTaskListPanel(0)} <!-- 0: на итоговых экранах ни одно задание не "текущее" -->
         </div>
 
         ${renderResizeHandle("left")}
 
         <div class="reflection-panel">
           <form id="reflection-form" class="reflection">
+            <!-- Без ответов по умолчанию: иначе кто просто нажмёт кнопку, "ответит" предвыбранным вариантом -->
             <fieldset>
-              <legend>Что понравилось больше?</legend>
-              <label><input type="radio" name="moreInteresting" value="numbers" checked /> Подбирать цифры на ощущение</label>
-              <label><input type="radio" name="moreInteresting" value="code" /> Собирать логику из блоков</label>
+              <legend>Что понравилось больше всего?</legend>
+              <label><input type="radio" name="moreInteresting" value="numbers" required /> Подбирать числа и баланс (прыжок)</label>
+              <label><input type="radio" name="moreInteresting" value="logic" /> Собирать логику из блоков</label>
+              <label><input type="radio" name="moreInteresting" value="engine" /> Разбираться, как устроен движок (компоненты, события)</label>
+              <label><input type="radio" name="moreInteresting" value="code" /> Работать с настоящим кодом</label>
             </fieldset>
             <fieldset>
-              <legend>Где было сложнее?</legend>
-              <label><input type="radio" name="hardestPart" value="numbers" /> На моменте с цифрами</label>
-              <label><input type="radio" name="hardestPart" value="code" /> На моменте с блоками</label>
-              <label><input type="radio" name="hardestPart" value="neither" checked /> Было несложно</label>
+              <legend>Где было сложнее всего?</legend>
+              <label><input type="radio" name="hardestPart" value="numbers" required /> С числами и балансом</label>
+              <label><input type="radio" name="hardestPart" value="logic" /> С логикой из блоков</label>
+              <label><input type="radio" name="hardestPart" value="engine" /> С устройством движка</label>
+              <label><input type="radio" name="hardestPart" value="code" /> С кодом</label>
+              <label><input type="radio" name="hardestPart" value="neither" /> Нигде не было сложно</label>
             </fieldset>
             <fieldset>
               <legend>Хотелось понять «почему это работает именно так», или просто получить результат?</legend>
-              <label><input type="radio" name="wantedWhy" value="yes" /> Хотелось разобраться, почему</label>
-              <label><input type="radio" name="wantedWhy" value="no" checked /> Главное — результат</label>
+              <label><input type="radio" name="wantedWhy" value="yes" required /> Хотелось разобраться, почему</label>
+              <label><input type="radio" name="wantedWhy" value="no" /> Главное — результат</label>
             </fieldset>
             <button type="submit" class="primary full">Получить фидбэк</button>
           </form>
@@ -50,8 +56,8 @@ export function renderReflection() {
     const form = e.target as HTMLFormElement;
     const data = new FormData(form);
     state.reflection = {
-      moreInteresting: data.get("moreInteresting") as "numbers" | "code",
-      hardestPart: data.get("hardestPart") as "numbers" | "code" | "neither",
+      moreInteresting: data.get("moreInteresting") as Interest,
+      hardestPart: data.get("hardestPart") as Interest | "neither",
       wantedWhy: data.get("wantedWhy") === "yes",
     };
     renderFeedback();

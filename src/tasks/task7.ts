@@ -3,7 +3,7 @@ import { render, setupHints, setupNextButtons } from "../ui/shell";
 import { renderTaskLayout, codeBlock, setStatus, whileLocked } from "../ui/taskLayout";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { setupConsole } from "../ui/console";
-import { registerAttempt } from "../state";
+import { registerAttempt, enterTask } from "../state";
 import { showCheckpointModal } from "./checkpoint";
 
 type LineId = "inc" | "label" | "assignWrong" | "textWrong";
@@ -112,7 +112,7 @@ export function renderTask7() {
 
     const error = compile(lines);
     if (error) {
-      registerAttempt(7, false);
+      registerAttempt(7, false, "compile");
       setStatus(status, "Ошибка компиляции — игра не запустилась. Открой Console.", "warn");
       consoleUi.push({
         ok: false,
@@ -140,24 +140,29 @@ export function renderTask7() {
     const result = await whileLocked(runBtn, () => scene.run());
 
     const ok = score === 3 && labelText === "3";
-    registerAttempt(7, ok);
     const incIdx = lines.indexOf("inc");
     const labelIdx = lines.indexOf("label");
 
     let verdict: string;
+    let mistake = "";
     if (ok) {
       verdict = "Точно! Частый момент путаницы у новичков: сама переменная score и то, что видно на экране, — две разные вещи, и их нужно синхронизировать вручную каждый раз.";
     } else if (incIdx === -1) {
+      mistake = "no-inc";
       verdict = "Счёт не растёт вообще — в методе нет score += 1, увеличивать нечему.";
     } else if (labelIdx === -1) {
+      mistake = "no-label";
       verdict = `В памяти score = ${score}, а на экране всё ещё «${labelText}»: текст в интерфейсе сам не обновляется — его нужно явно записать в scoreLabel.text.`;
     } else if (labelIdx < incIdx && score === 3) {
+      mistake = "label-before-inc";
       verdict = `На экране «${labelText}», а монеток собрано ${score} — текст обновляется ДО того, как score вырос, и всё время показывает старое значение.`;
     } else if (score !== 3) {
+      mistake = "score-extra";
       verdict = `Монеток было 3, а score = ${score} — score += 1 срабатывает больше одного раза за монетку.`;
     } else {
       verdict = `В памяти ${score}, на экране «${labelText}» — значения разошлись. Проверь порядок строк.`;
     }
+    registerAttempt(7, ok, mistake);
 
     setStatus(
       status,
@@ -179,5 +184,6 @@ export function renderTask7() {
   };
 
   runBtn.addEventListener("click", runScene);
-  setupHints();
+  setupHints(7);
+  enterTask(7);
 }

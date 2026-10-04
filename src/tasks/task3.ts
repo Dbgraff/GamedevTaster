@@ -17,7 +17,7 @@ import {
 } from "../ui/shell";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { renderConsoleDrawer, setupConsole } from "../ui/console";
-import { registerAttempt } from "../state";
+import { registerAttempt, enterTask, markFlag } from "../state";
 import { renderTask4 } from "./task4";
 
 // Порядок в палитре — намеренно перемешан, чтобы не подсказывать решение расположением.
@@ -153,6 +153,7 @@ export function renderTask3() {
         if (heldKeys.has("left")) posX -= speed * dt;
         if (heldKeys.has("right")) posX += speed * dt;
         posX = Math.max(6, Math.min(94, posX));
+        markFlag("drove3");
         cube.style.left = `${posX}%`;
       }
     }
@@ -193,13 +194,17 @@ export function renderTask3() {
     cube.classList.add(moved ? "moving" : "stuck");
 
     let verdict: string;
+    let mistake = "";
     if (!result.ranPhysics) {
+      mistake = "no-physics";
       verdict = "Физика так и не применилась — без неё кубик никогда не сдвинется, что бы ни было посчитано до этого.";
     } else if (!moved) {
+      mistake = "zero-velocity";
       verdict = "Кубик не сдвинулся — velocity в момент, когда физика её прочитала, оказался нулевым.";
     } else if (ok) {
       verdict = "Точно! Обрати внимание: то же самое разбиение на шаги — считать ввод, посчитать значение, применить к объекту — повторяется почти в любой механике движка, не только в прыжке.";
     } else {
+      mistake = "wrong-order";
       verdict = "Кубик сдвинулся, но порядок всё равно не тот эталонный — в реальном коде так тоже бывает: вроде работает, а на деле собрано не так, как задумано.";
     }
 
@@ -227,11 +232,12 @@ export function renderTask3() {
         : `Не двигается — открой разбор в Console.<span class="only-desktop">&nbsp;Стрелки честно повторят тот же результат.</span>`;
       viewportStatus.className = "viewport-status " + (ok ? "ok" : "warn");
 
-      registerAttempt(3, ok);
+      registerAttempt(3, ok, mistake);
       if (ok) next.enable();
     }, animationMs);
   };
 
   runBtn.addEventListener("click", runSequence);
-  setupHints();
+  setupHints(3);
+  enterTask(3);
 }

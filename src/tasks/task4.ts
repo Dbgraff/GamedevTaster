@@ -2,7 +2,7 @@ import { Scene2D, type BodyConfig, type ObjectSpec } from "../engines/scene2d";
 import { render, setupHints, setupNextButtons } from "../ui/shell";
 import { renderTaskLayout, setStatus, whileLocked } from "../ui/taskLayout";
 import { setupConsole } from "../ui/console";
-import { registerAttempt } from "../state";
+import { registerAttempt, enterTask } from "../state";
 import { renderTask5 } from "./task5";
 
 type ObjId = "player" | "wall" | "coin";
@@ -97,23 +97,29 @@ export function renderTask4() {
   syncToggles();
 
   // ---------- Разбор: что не так с компонентами (по смыслу, не "сверка с ответом") ----------
+  let issueCodes: string[] = [];
   const diagnose = (): string[] => {
     const issues: string[] = [];
+    issueCodes = [];
+    const add = (code: string, text: string) => {
+      issueCodes.push(code);
+      issues.push(text);
+    };
     const { player, wall, coin } = config;
     if (!player.rigidbody)
-      issues.push("Кубик не сдвинулся: скрипт задаёт ему скорость, но двигает объекты физика — а она работает только с теми, у кого есть Rigidbody.");
+      add("player-no-rb", "Кубик не сдвинулся: скрипт задаёт ему скорость, но двигает объекты физика — а она работает только с теми, у кого есть Rigidbody.");
     else if (!player.collider || player.isTrigger)
-      issues.push("Кубик провалился сквозь пол — Rigidbody тянет его вниз, а держаться за пол нечем: нужен обычный коллайдер, без Is Trigger.");
+      add("player-falls", "Кубик провалился сквозь пол — Rigidbody тянет его вниз, а держаться за пол нечем: нужен обычный коллайдер, без Is Trigger.");
     if (wall.rigidbody)
-      issues.push("Если добавить Rigidbody стене, физика начнёт считать её движущимся объектом — она сдвигается от удара, а нам нужна неподвижная преграда.");
+      add("wall-rb", "Если добавить Rigidbody стене, физика начнёт считать её движущимся объектом — она сдвигается от удара, а нам нужна неподвижная преграда.");
     if (!wall.collider || wall.isTrigger)
-      issues.push("Сквозь стену можно проехать — у неё нет твёрдого коллайдера (без Is Trigger), остановить кубик нечему.");
+      add("wall-no-collider", "Сквозь стену можно проехать — у неё нет твёрдого коллайдера (без Is Trigger), остановить кубик нечему.");
     if (!coin.collider)
-      issues.push("Монетка без коллайдера: кубик проезжает сквозь неё, но движок даже не узнаёт о касании — подобрать её будет невозможно.");
+      add("coin-no-collider", "Монетка без коллайдера: кубик проезжает сквозь неё, но движок даже не узнаёт о касании — подобрать её будет невозможно.");
     else if (!coin.isTrigger)
-      issues.push("Без Is Trigger монетка ведёт себя как стена — кубик об неё спотыкается, а не проходит сквозь неё.");
+      add("coin-not-trigger", "Без Is Trigger монетка ведёт себя как стена — кубик об неё спотыкается, а не проходит сквозь неё.");
     if (coin.rigidbody)
-      issues.push("Монетке не нужен Rigidbody — ей не нужно двигаться. С ним её тянет гравитация, и вместе с триггером она проваливается сквозь пол.");
+      add("coin-rb", "Монетке не нужен Rigidbody — ей не нужно двигаться. С ним её тянет гравитация, и вместе с триггером она проваливается сквозь пол.");
     return issues;
   };
 
@@ -124,7 +130,7 @@ export function renderTask4() {
 
     const issues = diagnose();
     const ok = issues.length === 0;
-    registerAttempt(4, ok);
+    registerAttempt(4, ok, issueCodes); // одна попытка, все найденные проблемы
 
     const verdict = ok
       ? "Именно так! Rigidbody — то, что двигает физика, Collider — форма для касаний, а Is Trigger — переключатель между «твёрдым» и «проходимым» объектом."
@@ -162,5 +168,6 @@ export function renderTask4() {
   };
 
   runBtn.addEventListener("click", runScene);
-  setupHints();
+  setupHints(4);
+  enterTask(4);
 }

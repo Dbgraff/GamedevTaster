@@ -13,7 +13,7 @@ import {
   TASK_TITLES,
 } from "../ui/shell";
 import { renderConsoleDrawer, setupConsole } from "../ui/console";
-import { state, registerAttempt } from "../state";
+import { state, registerAttempt, enterTask } from "../state";
 import { renderCodeTask } from "./task2";
 
 // withIntro — показать приветственную модалку поверх задания
@@ -142,7 +142,7 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
 
   demo.onOutcome = (outcome, meta) => {
     state.numbersAttempts += 1;
-    registerAttempt(1, outcome === "good-jump");
+    registerAttempt(1, outcome === "good-jump", outcome);
     const text = messages[outcome](meta.dip);
     const ok = outcome === "good-jump";
 
@@ -189,7 +189,8 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
   };
   window.addEventListener("keydown", onKeyDown);
 
-  setupHints();
+  setupHints(1);
+  enterTask(1);
 
   if (opts.withIntro) showIntroModal();
 }

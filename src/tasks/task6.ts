@@ -3,7 +3,7 @@ import { render, setupHints, setupNextButtons } from "../ui/shell";
 import { renderTaskLayout, codeBlock, setStatus, whileLocked } from "../ui/taskLayout";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { setupConsole } from "../ui/console";
-import { registerAttempt } from "../state";
+import { registerAttempt, enterTask } from "../state";
 import { renderTask7 } from "./task7";
 
 type LineId = "destroyOther" | "scoreInc" | "log" | "destroySelf";
@@ -143,7 +143,7 @@ export function renderTask6() {
     ).join("<br>");
 
     if (events.wall === events.coin) {
-      registerAttempt(6, false);
+      registerAttempt(6, false, "compile-dup");
       setStatus(status, "Ошибка компиляции — игра не запустилась. Открой Console.", "warn");
       consoleUi.push({
         ok: false,
@@ -169,25 +169,30 @@ export function renderTask6() {
     const coinGone = result.destroyed.includes("coin");
     const playerGone = result.destroyed.includes("player");
     const ok = coinGone && score === 1 && !wallGone && !playerGone && result.stoppedAtWall;
-    registerAttempt(6, ok);
-
     let verdict: string;
+    let mistake = "";
     if (playerGone) {
+      mistake = "destroy-self";
       verdict = "Пропал сам кубик: Destroy(gameObject) без other удаляет объект, на котором висит скрипт, — то есть кубика. Удалять нужно other.gameObject — то, чего коснулись.";
     } else if (wallGone || (events.coin === "collision" && score > 0)) {
+      mistake = "wrong-event";
       verdict =
         events.coin === "collision"
           ? "Монетка помечена как Is Trigger — а для триггеров движок вызывает не OnCollisionEnter, а OnTriggerEnter. OnCollisionEnter пришёл от стены, поэтому то, что ты задумывал для монетки, случилось со стеной."
           : "Стена исчезла: Destroy(other.gameObject) стоит в OnCollisionEnter, а это событие приходит от твёрдых объектов — то есть от стены.";
     } else if (!coinGone) {
+      mistake = "coin-left";
       verdict = "Монетка осталась висеть — её никто не удалил. В методе, который срабатывает на триггер, нужен Destroy(other.gameObject).";
     } else if (score === 0) {
+      mistake = "no-score";
       verdict = "Монетка исчезла, но счёт не вырос — не хватает score += 1 там же, где её удаляют.";
     } else if (score > 1) {
+      mistake = "score-extra";
       verdict = `Счёт вырос до ${score}, а монетка была одна — score += 1 срабатывает лишний раз.`;
     } else {
       verdict = "Отлично! Запомни это на будущее: твёрдые столкновения и триггеры — это два параллельных, не взаимозаменяемых набора событий движка.";
     }
+    registerAttempt(6, ok, mistake);
 
     setStatus(
       status,
@@ -209,5 +214,6 @@ export function renderTask6() {
   };
 
   runBtn.addEventListener("click", runScene);
-  setupHints();
+  setupHints(6);
+  enterTask(6);
 }

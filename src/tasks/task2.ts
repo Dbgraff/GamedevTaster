@@ -13,7 +13,7 @@ import {
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { whileLocked } from "../ui/taskLayout";
 import { renderConsoleDrawer, setupConsole } from "../ui/console";
-import { state, registerAttempt } from "../state";
+import { state, registerAttempt, enterTask } from "../state";
 import { renderTask3 } from "./task3";
 
 const BLOCK_DEFS: Record<BlockId, { label: string; code: string }> = {
@@ -169,24 +169,31 @@ export function renderCodeTask() {
 
     let verdict: string;
     let ok: boolean;
+    let mistake = "";
     if (!trial1.didJump && !trial2.didJump) {
       if (forceGetsCancelled) {
+        mistake = "reset-after-force";
         verdict = "Оба нужных блока есть, но «Сбросить скорость по Y» стоит ПОСЛЕ «Приложить силу вверх» — и полностью гасит то, что ты только что применил. Поменяй их местами.";
       } else if (missingForce) {
+        mistake = "missing-force";
         verdict = "Персонаж вообще не прыгает — в сборке нет блока «Приложить силу вверх», прыгать просто нечем.";
       } else {
+        mistake = "missing-force";
         verdict = "Персонаж вообще не прыгает — проверь, что «Приложить силу вверх» вообще есть в сборке и ничего не гасит его после.";
       }
       ok = false;
     } else if (trial1.didJump && !trial2.didJump) {
+      mistake = "no-reset";
       verdict = "Первый прыжок сработал, а второй — нет! Если персонаж уже падал, сила добавляется к остаточной скорости — без сброса результат непредсказуем.";
       ok = false;
     } else if (tooHigh) {
+      mistake = "too-high";
       verdict = "Прыжок подозрительно высокий по сравнению с эталоном — похоже, «Приложить силу вверх» выполняется несколько раз за одно нажатие (например, из-за «Повторить»). Update() и так уже крутится каждый кадр сам — оборачивать разовое действие в ещё один цикл не нужно.";
       ok = false;
     } else {
       const diff = Math.abs(trial1.peakHeight - trial2.peakHeight);
       if (diff > 8) {
+        mistake = "no-reset";
         verdict = `Прыжки разной высоты (${trial1.peakHeight}px и ${trial2.peakHeight}px) — классический баг: сила прыжка складывается с той скоростью, что уже была у персонажа.`;
         ok = false;
       } else {
@@ -197,7 +204,7 @@ export function renderCodeTask() {
     }
 
     if (!ok) state.codeAttempts += 1;
-    registerAttempt(2, ok);
+    registerAttempt(2, ok, mistake);
 
     viewportStatus.textContent = ok
       ? "Готово — последовательность стабильна. Разбор — во вкладке Console."
@@ -235,5 +242,6 @@ export function renderCodeTask() {
   };
 
   runBtn.addEventListener("click", runSequence);
-  setupHints();
+  setupHints(2);
+  enterTask(2);
 }

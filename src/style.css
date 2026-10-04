@@ -709,6 +709,27 @@ body:has(.editor-shell) {
   border-left: 2px solid #333; padding: 6px 10px; margin-top: 4px; line-height: 1.6;
 }
 
+/* ---------- Итоговый разбор ---------- */
+.profile-summary {
+  margin: 16px 0 6px; padding: 12px 14px;
+  border-left: 3px solid var(--accent-strong); background: rgba(56, 189, 248, 0.07);
+  color: #f0f0f0; font-size: 13.5px; line-height: 1.6; border-radius: 0 6px 6px 0;
+}
+.profile-section { margin-top: 14px; }
+.profile-line { color: #e2e2e8; line-height: 1.6; margin-top: 4px; }
+.profile-line b { color: #fff; font-weight: 600; }
+.direction-badge {
+  align-self: flex-start;
+  background: #12324a; border: 1px solid var(--accent-strong); color: #e0f2fe;
+  border-radius: 6px; padding: 6px 10px; font-size: 14px; font-weight: 700;
+}
+.axis-row { display: flex; flex-direction: column; gap: 4px; }
+.axis-head { display: flex; justify-content: space-between; font-size: 12.5px; color: #c7c7c7; }
+.axis-track { height: 8px; background: #1b1b1c; border: 1px solid #333; border-radius: 4px; overflow: hidden; }
+.axis-fill { height: 100%; background: linear-gradient(90deg, #2c5d87, var(--accent-strong)); }
+.axis-note, .next-step { margin: 0; font-size: 12.5px; line-height: 1.5; color: #a9a9b2; }
+.next-step { color: #d4d4d8; }
+
 /* Ноутбуки поуже: прячем список из 10 заданий (это навигация, не суть),
    но описание ТЕКУЩЕГО задания остаётся всегда — это основной контент. */
 @media (max-width: 1100px) {

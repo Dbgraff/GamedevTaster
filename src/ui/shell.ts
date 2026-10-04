@@ -1,3 +1,4 @@
+import { registerHint, progress } from "../state";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 export function render(html: string) {
@@ -61,7 +62,7 @@ export function renderTaskListPanel(currentIndex: number): string {
       <p class="section-title" style="margin-bottom:12px">Задания</p>
       ${TASK_TITLES.map((title, i) => {
         const n = i + 1;
-        const done = n < currentIndex;
+        const done = progress.solvedOn[n] !== undefined; // по реально решённым, а не по номеру
         const current = n === currentIndex;
         const locked = n > TASKS_BUILT;
         const cls = current ? "hierarchy-item selected" : locked ? "hierarchy-item locked" : "hierarchy-item";
@@ -279,13 +280,15 @@ export function renderHintBlock(hints: [string, string]): string {
     </div>
   `;
 }
-export function setupHints() {
+// task — номер задания: открытые подсказки попадают в журнал прохождения
+export function setupHints(task?: number) {
   let level = 0;
   const btn = document.querySelector<HTMLButtonElement>("#hint-btn");
   const t1 = document.querySelector<HTMLDivElement>("#hint-text-1");
   const t2 = document.querySelector<HTMLDivElement>("#hint-text-2");
   btn?.addEventListener("click", () => {
     level++;
+    if (task !== undefined) registerHint(task);
     if (level === 1 && t1) {
       t1.style.display = "block";
       if (btn) btn.textContent = "💡 Ещё подсказка";

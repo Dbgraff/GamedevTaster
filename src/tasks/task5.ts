@@ -3,7 +3,7 @@ import { render, setupHints, setupNextButtons } from "../ui/shell";
 import { renderTaskLayout, codeBlock, setStatus, whileLocked } from "../ui/taskLayout";
 import { setupSequenceBuilder } from "../ui/sequenceBuilder";
 import { setupConsole } from "../ui/console";
-import { registerAttempt } from "../state";
+import { registerAttempt, enterTask } from "../state";
 import { renderTask6 } from "./task6";
 
 const PALETTE: CamLineId[] = ["assign", "recalcOffset", "calc", "direct", "lockY"];
@@ -95,24 +95,24 @@ export function renderTask5() {
   // Вердикт опирается на то, что реально сняла камера (stats), а не только на
   // порядок строк: например, пересчёт offset ломает камеру, только если стоит
   // ДО расчёта targetPosition, — после него он просто лишний.
-  const verdictFor = (m: CamMethod, lines: CamLineId[], stats: CamRunStats): string => {
+  const verdictFor = (m: CamMethod, lines: CamLineId[], stats: CamRunStats): [string, string] => {
     const idx = (id: CamLineId) => lines.indexOf(id);
     if (!stats.cameraMoved) {
       if (lines.includes("recalcOffset") && idx("recalcOffset") < idx("calc"))
-        return "Камера не двигается: offset пересчитывается из того места, где камера уже стоит, ещё до расчёта targetPosition — и targetPosition каждый раз получается ровно там же.";
+        return ["Камера не двигается: offset пересчитывается из того места, где камера уже стоит, ещё до расчёта targetPosition — и targetPosition каждый раз получается ровно там же.", "recalc"];
       if (!lines.includes("assign") && !lines.includes("direct"))
-        return "Позиция посчитана, но камере её так никто и не присвоил — transform.position не меняется, и кубик уезжает из кадра.";
-      return "Камера так и не сдвинулась — проверь, что в методе есть строка, которая меняет transform.position, и что её ничего не отменяет.";
+        return ["Позиция посчитана, но камере её так никто и не присвоил — transform.position не меняется, и кубик уезжает из кадра.", "no-move"];
+      return ["Камера так и не сдвинулась — проверь, что в методе есть строка, которая меняет transform.position, и что её ничего не отменяет.", "no-move"];
     }
     if (lines.includes("direct"))
-      return "Камера прилипла к кубику: transform.position = player.position выкидывает offset, поэтому кубик в центре кадра, а камера повторяет каждый его прыжок.";
+      return ["Камера прилипла к кубику: transform.position = player.position выкидывает offset, поэтому кубик в центре кадра, а камера повторяет каждый его прыжок.", "direct"];
     if (stats.bob > 4)
-      return "Камера прыгает вместе с кубиком: высоту нужно зафиксировать ДО того, как присвоить позицию — строка про y должна стоять перед transform.position = targetPosition.";
+      return ["Камера прыгает вместе с кубиком: высоту нужно зафиксировать ДО того, как присвоить позицию — строка про y должна стоять перед transform.position = targetPosition.", "bob"];
     if (m === "Update" && stats.jitter > 0.8)
-      return "Порядок строк верный, но камера подёргивается: в Update нет гарантии, что кубик уже сдвинулся в этом кадре — иногда камера смотрит на его старую позицию. Для камеры есть LateUpdate.";
+      return ["Порядок строк верный, но камера подёргивается: в Update нет гарантии, что кубик уже сдвинулся в этом кадре — иногда камера смотрит на его старую позицию. Для камеры есть LateUpdate.", "update-jitter"];
     if (JSON.stringify(lines) !== JSON.stringify(CORRECT))
-      return "Камера следует нормально, но в методе есть лишние строки — например, offset не нужно пересчитывать каждый кадр, он задаётся один раз. Лишний код — лишний шанс что-то сломать.";
-    return "Верно! Важен не только порядок строк, но и то, что код лежит в LateUpdate: он вызывается после всех Update, поэтому камера всегда смотрит на кубик, который уже закончил двигаться в этом кадре.";
+      return ["Камера следует нормально, но в методе есть лишние строки — например, offset не нужно пересчитывать каждый кадр, он задаётся один раз. Лишний код — лишний шанс что-то сломать.", "extra-lines"];
+    return ["Верно! Важен не только порядок строк, но и то, что код лежит в LateUpdate: он вызывается после всех Update, поэтому камера всегда смотрит на кубик, который уже закончил двигаться в этом кадре.", ""];
   };
 
   const runScript = async () => {
@@ -132,7 +132,7 @@ export function renderTask5() {
 
     if (!compiled.ok) {
       // В Unity с ошибками компиляции игра вообще не запускается
-      registerAttempt(5, false);
+      registerAttempt(5, false, "compile");
       demo.reset();
       setStatus(status, "Ошибка компиляции — игра не запустилась. Открой Console.", "warn");
       consoleUi.push({
@@ -148,8 +148,8 @@ export function renderTask5() {
     const stats = await whileLocked(runBtn, () => demo.run(method!, lines));
 
     const ok = method === "LateUpdate" && JSON.stringify(lines) === JSON.stringify(CORRECT);
-    registerAttempt(5, ok);
-    const verdict = verdictFor(method, lines, stats);
+    const [verdict, mistake] = verdictFor(method, lines, stats);
+    registerAttempt(5, ok, mistake);
 
     setStatus(
       status,
@@ -173,5 +173,6 @@ export function renderTask5() {
   };
 
   runBtn.addEventListener("click", runScript);
-  setupHints();
+  setupHints(5);
+  enterTask(5);
 }
