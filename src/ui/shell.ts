@@ -85,7 +85,7 @@ export function isModalOpen(): boolean {
 // Общий механизм модалок: приветствие, развилка после задания 7 и будущие.
 // Esc закрывает окно; фокус ставится на элемент с data-autofocus, чтобы
 // Enter/пробел нажимали кнопку, а не уходили в сцену под окном.
-export function openModal(innerHtml: string, opts: { labelledBy?: string; onClose?: () => void } = {}) {
+export function openModal(innerHtml: string, opts: { labelledBy?: string; onClose?: () => void; dismissible?: boolean } = {}) {
   if (isModalOpen()) return null;
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
@@ -99,7 +99,7 @@ export function openModal(innerHtml: string, opts: { labelledBy?: string; onClos
     opts.onClose?.();
   };
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === "Escape") close();
+    if (e.key === "Escape" && opts.dismissible !== false) close();
   };
   window.addEventListener("keydown", onKey);
   document.body.appendChild(backdrop);
@@ -107,29 +107,6 @@ export function openModal(innerHtml: string, opts: { labelledBy?: string; onClos
   return { backdrop, close };
 }
 
-export function showIntroModal(onClose?: () => void) {
-  const modal = openModal(
-    `
-      <p class="eyebrow">Попробуй профессию · программист в геймдеве</p>
-      <h1 id="intro-modal-title">Сейчас ты побудешь геймплей-программистом</h1>
-      <p class="lead">
-        Ты будешь чинить и собирать поведение кубика в редакторе, похожем на Unity:
-        сначала подкручивать числа, потом собирать логику из блоков, а ближе к концу —
-        работать с настоящим кодом. Никакой теории заранее — сразу практика.
-      </p>
-      <ul class="modal-list">
-        <li><span class="info-dot"></span>${TASKS_BUILT === TASK_TITLES.length ? `${TASK_TITLES.length} заданий` : `Сейчас доступно ${TASKS_BUILT} из ${TASK_TITLES.length} заданий`}, каждое — на несколько минут, от подкрутки чисел до настоящего кода</li>
-        <li><span class="info-dot"></span>Застрял — жми «💡 Подсказка», у каждого задания их две</li>
-        <li><span class="info-dot"></span>Что пошло не так и почему — во вкладке Console рядом со сценой</li>
-        <li><span class="info-dot"></span>В конце — короткий разбор: что тебе зашло больше</li>
-        <li class="keyboard-hint"><span class="info-dot"></span>🎮 В заданиях с этим значком можно управлять кубиком с клавиатуры</li>
-      </ul>
-      <button type="button" class="primary" data-modal-close data-autofocus>▶ Начать</button>
-    `,
-    { labelledBy: "intro-modal-title", onClose }
-  );
-  modal?.backdrop.querySelector("[data-modal-close]")!.addEventListener("click", modal.close);
-}
 
 // ---------- Мобильная шапка (из макета №3): "Задача N из 10" + ☰ ----------
 // На десктопе скрыта через CSS. ☰ раскрывает список заданий, который на узких

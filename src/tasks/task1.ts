@@ -8,12 +8,12 @@ import {
   renderNextButton,
   setupHints,
   setupNextButtons,
-  showIntroModal,
   isModalOpen,
   TASK_TITLES,
 } from "../ui/shell";
 import { renderConsoleDrawer, setupConsole } from "../ui/console";
 import { state, registerAttempt, enterTask } from "../state";
+import { showWelcome } from "../ui/welcome";
 import { renderCodeTask } from "./task2";
 
 // withIntro — показать приветственную модалку поверх задания
@@ -192,5 +192,5 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
   setupHints(1);
   enterTask(1);
 
-  if (opts.withIntro) showIntroModal();
+  if (opts.withIntro) showWelcome();
 }

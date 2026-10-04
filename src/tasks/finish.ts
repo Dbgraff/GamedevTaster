@@ -1,5 +1,6 @@
 import { openModal } from "../ui/shell";
 import { progress } from "../state";
+import { research } from "../research";
 import { renderReflection } from "./reflection";
 
 // Кнопка "Закончить и пройти опрос" на заданиях 7–10. С подтверждением — чтобы
@@ -9,7 +10,7 @@ export function setupFinishButton(beforeLeave?: () => void) {
     const modal = openModal(
       `
         <p class="eyebrow">Закончить курс?</p>
-        <h1 id="finish-title">Перейти к разбору и опросу</h1>
+        <h1 id="finish-title">${research.consent ? "Перейти к разбору и опросу" : "Перейти к разбору"}</h1>
         <p class="lead">Всё, что ты уже прошёл(ла), попадёт в разбор. Оставшиеся задания можно не проходить — это нормально.</p>
         <div class="modal-actions">
           <button type="button" class="primary" data-finish="yes">Да, закончить</button>

@@ -3,6 +3,8 @@ import { state, progress, resetSession } from "../state";
 import { buildProfile } from "../feedback";
 import { renderNumbersTask } from "./task1";
 import { getTaskRenderer, HARD_TASKS_FROM } from "./registry";
+import { research } from "../research";
+import { renderSurvey } from "./survey";
 
 // "с 1-й попытки", "со 2-й попытки" — по-русски порядковые с "с/со"
 const ordinal = (n: number) => `${n === 2 ? "со" : "с"} ${n}-й попытки`;
@@ -78,6 +80,15 @@ export function renderFeedback() {
         ${renderResizeHandle("right")}
 
         <div class="inspector">
+          ${
+            research.consent
+              ? `<div class="section-card survey-cta">
+                  <p class="section-title">Последний шаг</p>
+                  <p class="next-step">Ответь на короткий опрос — это займёт несколько минут и очень поможет исследованию.</p>
+                  <button type="button" id="open-survey" class="primary">Пройти опрос →</button>
+                </div>`
+              : `<div class="section-card"><p class="next-step">Спасибо, что попробовал(а) курс! Опрос не показывается — ты решил(а) не участвовать в исследовании, и это нормально.</p></div>`
+          }
           <div class="section-card">
             <p class="section-title">Твой профиль</p>
             <div class="direction-badge">${profile.directionTitle}</div>
@@ -103,8 +114,10 @@ export function renderFeedback() {
   `);
 
   document.querySelector("#continue-hard")?.addEventListener("click", () => hardTask?.());
+  document.querySelector("#open-survey")?.addEventListener("click", renderSurvey);
   document.querySelector("#banner-restart")?.addEventListener("click", () => {
     resetSession();
+    research.pass += 1;
     renderNumbersTask({ withIntro: true });
   });
 }

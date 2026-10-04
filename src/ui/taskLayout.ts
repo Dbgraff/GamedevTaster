@@ -11,6 +11,7 @@ import {
   TASK_TITLES,
 } from "./shell";
 import { renderConsoleDrawer } from "./console";
+import { research } from "../research";
 
 export interface TaskLayout {
   n: number;
@@ -40,7 +41,7 @@ export function renderTaskLayout(t: TaskLayout): string {
             <h2>${t.title}</h2>
             ${t.leads.map((l) => `<p class="lead">${l}</p>`).join("")}
             ${renderHintBlock(t.hints)}
-            ${t.finishButton ? `<button type="button" id="finish-btn" class="text-btn finish-btn">Закончить и пройти опрос</button>` : ""}
+            ${t.finishButton ? `<button type="button" id="finish-btn" class="text-btn finish-btn">${research.consent ? "Закончить и пройти опрос" : "Закончить и получить разбор"}</button>` : ""}
           </div>
           ${renderNextButton()}
         </div>

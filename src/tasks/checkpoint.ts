@@ -1,5 +1,6 @@
 import { openModal, TASK_TITLES } from "../ui/shell";
 import { progress } from "../state";
+import { research } from "../research";
 import { getTaskRenderer, CHECKPOINT_AFTER, HARD_TASKS_FROM } from "./registry";
 import { renderReflection } from "./reflection";
 
@@ -10,6 +11,7 @@ export function showCheckpointModal() {
   const solved = Object.entries(progress.solvedOn).filter(([n]) => Number(n) <= CHECKPOINT_AFTER);
   const firstTry = solved.filter(([, attempt]) => attempt === 1).length;
   const hardCount = TASK_TITLES.length - CHECKPOINT_AFTER;
+  const surveyLabel = research.consent ? "Пройти опросник и получить разбор" : "Закончить и получить разбор";
 
   const modal = openModal(
     `
@@ -29,14 +31,14 @@ export function showCheckpointModal() {
         ${
           hardTask
             ? `<button type="button" class="primary" data-choice="continue" data-autofocus>Продолжить: сложные задания →</button>
-               <button type="button" class="secondary" data-choice="survey">Пройти опросник и получить разбор</button>`
-            : `<button type="button" class="primary" data-choice="survey" data-autofocus>Пройти опросник и получить разбор</button>
+               <button type="button" class="secondary" data-choice="survey">${surveyLabel}</button>`
+            : `<button type="button" class="primary" data-choice="survey" data-autofocus>${surveyLabel}</button>
                <button type="button" class="secondary" disabled>Сложные задания — скоро появятся</button>`
         }
       </div>
       <p class="modal-note">${
         hardTask
-          ? "Опросник никуда не денется — его можно пройти и после сложных заданий."
+          ? research.consent ? "Опросник никуда не денется — его можно пройти и после сложных заданий." : "Разбор можно получить и после сложных заданий."
           : "Задания 8–10 сейчас в разработке. Когда они появятся, к ним можно будет перейти прямо с итогового экрана."
       }</p>
     `,
