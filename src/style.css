@@ -357,6 +357,12 @@ body:has(.editor-shell) {
 .field-row label { font-size: 12px; color: #b8b8b8; }
 .field-row input[type="number"] { width: 70px; background: #141415; border: 1px solid #3a3a3c; border-radius: 4px; color: #e8e8e8; font-size: 12px; text-align: right; padding: 6px 8px; }
 .field-row input[type="number"]:focus { outline: none; border-color: var(--accent-strong); }
+/* Значение не на сетке шага (например 0.12 при шаге 0.05) браузер считает "невалидным",
+   а Firefox подсвечивает такое поле красным, как ошибку. Здесь это не ошибка —
+   шаг нужен только стрелкам. Правила разделены: незнакомый браузеру селектор
+   -moz- в общем списке отключил бы и первое правило. */
+.field-row input[type="number"]:invalid { box-shadow: none; }
+.field-row input[type="number"]:-moz-ui-invalid { box-shadow: none; }
 
 .status-bar { height: 26px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #1b1b1c; border-top: 1px solid #101011; font-size: 11px; color: #7a7a7a; }
 

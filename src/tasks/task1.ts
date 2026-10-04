@@ -76,7 +76,7 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
             </div>
             <div class="field-row">
               <label for="gc">Ground Check Distance</label>
-              <input id="gc" type="number" inputmode="decimal" min="0.02" max="0.30" step="0.01" value="0.03" />
+              <input id="gc" type="number" inputmode="decimal" min="0" step="0.05" value="0.03" />
             </div>
           </div>
           <div class="action-bar">
@@ -106,15 +106,19 @@ export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
 
   // valueAsNumber — основной путь; запасной разбор с заменой запятой нужен
   // для iPhone с русской клавиатурой, где в десятичное поле вводится "0,05".
-  const readNum = (el: HTMLInputElement, fallback: number) => {
+  // allowZero — для полей, где 0 осмысленное значение (у Ground Check 0 = "проверки нет").
+  // Для Gravity Scale ноль подменяется: без гравитации кубик улетел бы и не приземлился.
+  const readNum = (el: HTMLInputElement, fallback: number, allowZero = false) => {
     const v = Number.isFinite(el.valueAsNumber) ? el.valueAsNumber : parseFloat(el.value.replace(",", "."));
-    return Number.isFinite(v) && v !== 0 ? v : fallback;
+    if (!Number.isFinite(v)) return fallback; // поле пустое или не число
+    if (v === 0 && !allowZero) return fallback;
+    return Math.max(0, v); // отрицательные значения тут смысла не имеют
   };
   const syncParams = () => {
     demo.setParams({
       jumpForce: readNum(jf, 0),
       gravityScale: readNum(gs, 1),
-      groundCheckDistance: readNum(gc, 0.02),
+      groundCheckDistance: readNum(gc, 0.02, true),
     });
   };
   [jf, gs, gc].forEach((el) => el.addEventListener("input", syncParams));
