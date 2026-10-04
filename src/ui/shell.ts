@@ -73,6 +73,55 @@ export function renderTaskListPanel(currentIndex: number): string {
   `;
 }
 
+// ---------- Приветственная модалка (заменила отдельный экран интро) ----------
+// Показывается поверх задания 1 при первом заходе и после "Пройти заново".
+// Числа берутся из TASK_TITLES / TASKS_BUILT, чтобы текст не устаревал,
+// когда добавятся новые задания (как было с "2 коротких задачи").
+export function isModalOpen(): boolean {
+  return document.querySelector(".modal-backdrop") !== null;
+}
+
+export function showIntroModal(onClose?: () => void) {
+  if (isModalOpen()) return;
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
+      <p class="eyebrow">Попробуй профессию · программист в геймдеве</p>
+      <h1 id="intro-modal-title">Сейчас ты побудешь геймплей-программистом</h1>
+      <p class="lead">
+        Ты будешь чинить и собирать поведение кубика в редакторе, похожем на Unity:
+        сначала подкручивать числа, потом собирать логику из блоков, а ближе к концу —
+        работать с настоящим кодом. Никакой теории заранее — сразу практика.
+      </p>
+      <ul class="modal-list">
+        <li><span class="info-dot"></span>Сейчас доступно ${TASKS_BUILT} из ${TASK_TITLES.length} заданий, каждое — на несколько минут</li>
+        <li><span class="info-dot"></span>Застрял — жми «💡 Подсказка», у каждого задания их две</li>
+        <li><span class="info-dot"></span>Что пошло не так и почему — во вкладке Console рядом со сценой</li>
+        <li><span class="info-dot"></span>В конце — короткий разбор: что тебе зашло больше</li>
+        <li class="keyboard-hint"><span class="info-dot"></span>🎮 В заданиях с этим значком можно управлять кубиком с клавиатуры</li>
+      </ul>
+      <button type="button" class="primary" data-modal-close>▶ Начать</button>
+    </div>
+  `;
+
+  const close = () => {
+    window.removeEventListener("keydown", onKey);
+    backdrop.remove();
+    onClose?.();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") close();
+  };
+
+  backdrop.querySelector("[data-modal-close]")!.addEventListener("click", close);
+  window.addEventListener("keydown", onKey);
+  document.body.appendChild(backdrop);
+  // Фокус на кнопке — чтобы Enter/пробел закрывали окно, а не уходили в сцену
+  backdrop.querySelector<HTMLButtonElement>("[data-modal-close]")!.focus();
+}
+
 // ---------- Мобильная шапка (из макета №3): "Задача N из 10" + ☰ ----------
 // На десктопе скрыта через CSS. ☰ раскрывает список заданий, который на узких
 // экранах по умолчанию спрятан, чтобы не отодвигать само задание вниз.

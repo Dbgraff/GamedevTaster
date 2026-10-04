@@ -1,7 +1,7 @@
 import { render, renderTaskListPanel, renderResizeHandle, TASKS_BUILT } from "../ui/shell";
 import { state } from "../state";
 import { getFeedback } from "../feedback";
-import { renderIntro } from "./intro";
+import { renderNumbersTask } from "./task1";
 
 export function renderFeedback() {
   const feedback = getFeedback(state);
@@ -61,6 +61,6 @@ export function renderFeedback() {
   document.querySelector("#banner-restart")?.addEventListener("click", () => {
     state.numbersAttempts = 0;
     state.codeAttempts = 0;
-    renderIntro();
+    renderNumbersTask({ withIntro: true });
   });
 }

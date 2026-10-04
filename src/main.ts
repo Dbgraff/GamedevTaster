@@ -1,4 +1,5 @@
 import "./style.css";
-import { renderIntro } from "./tasks/intro";
+import { renderNumbersTask } from "./tasks/task1";
 
-renderIntro();
+// Отдельного экрана интро больше нет — приветствие теперь модалка поверх задания 1.
+renderNumbersTask({ withIntro: true });

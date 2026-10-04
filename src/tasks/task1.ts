@@ -8,12 +8,16 @@ import {
   renderNextButton,
   setupHints,
   setupNextButtons,
+  showIntroModal,
+  isModalOpen,
   TASK_TITLES,
 } from "../ui/shell";
 import { state } from "../state";
 import { renderCodeTask } from "./task2";
 
-export function renderNumbersTask() {
+// withIntro — показать приветственную модалку поверх задания
+// (при первом заходе в приложение и после "Пройти пробу заново").
+export function renderNumbersTask(opts: { withIntro?: boolean } = {}) {
   render(`
     <div class="editor-shell">
       <div class="editor-main">
@@ -52,7 +56,7 @@ export function renderNumbersTask() {
                 <button type="button" id="console-close" class="console-drawer-close" aria-label="Закрыть">✕</button>
               </div>
               <div class="console" id="console-output">
-                <span class="muted">&gt; Нажми Play, чтобы увидеть результат здесь.</span>
+                <span class="muted">&gt; Здесь будут результаты твоих попыток.</span>
               </div>
             </div>
           </div>
@@ -108,8 +112,11 @@ export function renderNumbersTask() {
   const consoleOutput = document.querySelector<HTMLDivElement>("#console-output")!;
   const tabButtons = document.querySelectorAll<HTMLButtonElement>(".scene-tabs .tab-btn");
 
+  const consoleTab = document.querySelector<HTMLButtonElement>('.scene-tabs .tab-btn[data-tab="console"]')!;
+
   const openConsole = () => {
     consoleDrawer.classList.add("open");
+    consoleTab.classList.remove("has-new");
     tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === "console"));
   };
   const closeConsole = () => {
@@ -151,21 +158,51 @@ export function renderNumbersTask() {
     renderCodeTask();
   });
 
+  // Консоль сама открывается только после ПЕРВОЙ попытки — чтобы человек узнал,
+  // что она есть. Дальше, пока он экспериментирует, она не выскакивает на каждый
+  // прыжок: на вкладке загорается точка, а результаты копятся историей.
+  let consoleAutoOpened = false;
+  const history: string[] = [];
+  const MAX_HISTORY = 12;
+  let attempt = 0;
+
   demo.onOutcome = (outcome, meta) => {
     state.numbersAttempts += 1;
+    attempt += 1;
     const text = messages[outcome](meta.dip);
     const ok = outcome === "good-jump";
 
     status.textContent = text;
     status.className = "viewport-status " + (ok ? "ok" : outcome === "idle" ? "" : "warn");
 
-    consoleOutput.innerHTML = `<div><span class="${ok ? "ok" : "warn"} final">${ok ? "[✓] " : "[!] "}${text}</span></div>`;
-    openConsole();
+    const p = demo.getParams();
+    history.unshift(`
+      <div class="attempt">
+        <div class="attempt-head">
+          <span class="${ok ? "ok" : "warn"}">${ok ? "[✓]" : "[!]"}</span>
+          Попытка ${attempt}
+          <span class="muted">· Jump Force ${p.jumpForce} · Gravity ${p.gravityScale} · Ground Check ${p.groundCheckDistance}</span>
+        </div>
+        <div class="attempt-text">${text}</div>
+      </div>`);
+    // у предыдущей "свежей" записи снимаем акцент
+    if (history.length > 1) history[1] = history[1].replace('class="attempt"', 'class="attempt attempt--old"');
+    if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+    consoleOutput.innerHTML = history.join("");
+
+    if (!consoleAutoOpened) {
+      consoleAutoOpened = true;
+      openConsole();
+    } else if (!consoleDrawer.classList.contains("open")) {
+      consoleTab.classList.add("has-new");
+    }
 
     if (ok) next.enable();
   };
 
   const runJump = () => {
+    // консоль перекрывает низ сцены, где стоит кубик — на время прыжка прячем её
+    closeConsole();
     demo.reset();
     demo.tryJump();
   };
@@ -176,13 +213,17 @@ export function renderNumbersTask() {
   // На мобильном физической клавиатуры обычно нет, так что это чисто
   // десктопное удобство — на экране для него есть отдельная подсказка.
   const onKeyDown = (e: KeyboardEvent) => {
+    // Пока открыта приветственная модалка, пробел принадлежит ей (жмёт "Начать"),
+    // а не сцене под ней.
+    if (isModalOpen()) return;
     if (e.code === "Space") {
       e.preventDefault();
-      closeConsole();
       runJump();
     }
   };
   window.addEventListener("keydown", onKeyDown);
 
   setupHints();
+
+  if (opts.withIntro) showIntroModal();
 }

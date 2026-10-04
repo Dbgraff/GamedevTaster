@@ -411,19 +411,54 @@ body:has(.editor-shell) {
 }
 .deco-player.jumping { animation: bounce-demo 0.5s ease-out; }
 
-/* Hero-оверлей поверх сцены (главное меню) */
-.hero-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.hero-card {
-  max-width: 560px;
-  text-align: center;
-  background: rgba(16, 16, 20, 0.86);
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 40px 44px;
+/* ---------- Приветственная модалка (заменила экран интро) ---------- */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(5, 6, 10, 0.68);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: modal-fade 0.2s ease;
 }
-.hero-card .eyebrow { justify-content: center; }
-.hero-card h1 { font-size: 30px; color: #f2f2f2; }
-.hero-card .lead { max-width: none; }
+@keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-rise { from { transform: translateY(12px); } to { transform: translateY(0); } }
+.modal-card {
+  width: 100%; max-width: 540px;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 14px;
+  padding: 32px 32px 28px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: modal-rise 0.25s ease;
+}
+.modal-card h1 { font-size: 26px; line-height: 1.25; margin: 0 0 12px; color: #f2f2f2; }
+.modal-card .lead { font-size: 15px; line-height: 1.6; color: #c7c7c7; margin: 0 0 20px; max-width: none; }
+.modal-list { list-style: none; padding: 0; margin: 0 0 24px; display: flex; flex-direction: column; gap: 10px; }
+.modal-list li { display: flex; gap: 10px; font-size: 14px; line-height: 1.45; color: #d4d4d4; }
+.modal-list .info-dot { margin-top: 7px; }
+.modal-card .primary { width: 100%; padding: 14px; font-size: 16px; }
+
+/* ---------- История попыток в консоли (задача 1) ---------- */
+.attempt { padding: 10px 0; border-bottom: 1px solid #23232a; }
+.attempt:first-child { padding-top: 0; }
+.attempt:last-child { border-bottom: none; }
+.attempt-head { font-size: 12px; color: #e8e8e8; }
+.attempt-text { margin-top: 4px; color: #e8e8e8; line-height: 1.5; }
+.attempt--old .attempt-head, .attempt--old .attempt-text { opacity: 0.55; }
+
+/* Точка "есть новое" на вкладке Console, когда она не открылась сама */
+.tab-btn.has-new::after {
+  content: "";
+  display: inline-block;
+  width: 7px; height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--warn);
+  vertical-align: 1px;
+}
 
 .info-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #c7c7c7; }
 .info-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex: none; }
@@ -439,6 +474,7 @@ body:has(.editor-shell) {
 }
 .console .muted { color: #6b6b6b; }
 .console .ok { color: var(--ok); }
+.console .warn { color: var(--warn); }
 .console .info { color: var(--accent); }
 .console .final { color: #e8e8e8; font-size: 13px; line-height: 1.6; display: block; margin-top: 12px; }
 
@@ -654,7 +690,7 @@ body:has(.editor-shell) {
   .hint-btn { padding: 8px 0; font-size: 14px; } /* было 12px — сложно попасть пальцем */
 
   .hierarchy [data-next-btn] { display: none; }
-  .keyboard-hint { display: none; }
+  .keyboard-hint, .modal-list li.keyboard-hint { display: none; }
   .task-roadmap .hierarchy-item span[title] { display: none; } /* 🎮 = клавиатура, которой тут нет */
 
   /* ---- Сцена — карточка с отступами, как в макете ---- */
@@ -695,10 +731,6 @@ body:has(.editor-shell) {
   .scene-col--static .deco-ground,
   .scene-col--static .deco-player { display: none; }
   .scene-col--static .deco-scene { position: relative; flex: none; height: auto; min-height: 0; }
-  .scene-col--static .hero-overlay { position: relative; inset: auto; padding: 0; }
-  .scene-col--static .hero-card { max-width: none; padding: 24px 18px; border: none; border-radius: 0; text-align: left; }
-  .scene-col--static .hero-card h1 { font-size: 23px; }
-  .scene-col--static .hero-card .lead { margin-bottom: 0; }
   .scene-col--static .console { height: auto; }
 
   /* ---- Инспектор ---- */
@@ -760,4 +792,16 @@ body:has(.editor-shell) {
 
   .task-banner { flex-direction: column; align-items: flex-start; }
   .menu-group { display: none; }
+
+  /* Модалка на телефоне — шторкой снизу, кнопка под большим пальцем */
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .modal-card {
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: 18px 18px 0 0;
+    border-bottom: none;
+    padding: 26px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+  .modal-card h1 { font-size: 22px; }
+  @keyframes modal-rise { from { transform: translateY(40px); } to { transform: translateY(0); } }
 }

@@ -77,6 +77,10 @@ export class PlatformerDemo {
     this.draw();
   }
 
+  getParams(): PhysicsParams {
+    return { ...this.params };
+  }
+
   setParams(params: Partial<PhysicsParams>) {
     this.params = { ...this.params, ...params };
   }
